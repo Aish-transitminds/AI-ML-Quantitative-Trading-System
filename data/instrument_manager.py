@@ -62,14 +62,14 @@ class InstrumentManager:
                 self._token_to_symbol[token] = symbol
                 
                 # Cache to database
-                self._db.upsert_instrument(
-                    token=token,
-                    symbol=symbol,
-                    name=inst.get('name', ''),
-                    exchange=inst.get('exchange', 'NSE'),
-                    lot_size=inst.get('lot_size', 1),
-                    tick_size=inst.get('tick_size', 0.05),
-                )
+                self._db.upsert_instrument({
+                    'token': token,
+                    'symbol': symbol,
+                    'name': inst.get('name', ''),
+                    'exchange': inst.get('exchange', 'NSE'),
+                    'lot_size': inst.get('lot_size', 1),
+                    'tick_size': inst.get('tick_size', 0.05),
+                })
             
             logger.info(f"Loaded {len(self._all_instruments)} instruments")
             return len(self._all_instruments)
