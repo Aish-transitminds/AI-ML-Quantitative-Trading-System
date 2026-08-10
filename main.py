@@ -264,14 +264,19 @@ class Application:
         # Load demo bars and simulate screen results
         self._load_demo_screen_results(instruments)
 
+        # Count actual qualified instruments
+        screen_results = self.data_manager._screen_results.values()
+        ltp_qualified = sum(1 for r in screen_results if r.passes_ltp_filter)
+        liquidity_qualified = sum(1 for r in screen_results if r.passes_liquidity_filter)
+
         # Update state
         self.state.update_status({
             'running': True,
             'broker_connected': True,
             'broker_name': 'Offline Demo',
             'total_instruments': len(instruments),
-            'ltp_qualified': len(instruments),
-            'liquidity_qualified': len(instruments),
+            'ltp_qualified': ltp_qualified,
+            'liquidity_qualified': liquidity_qualified,
             'tick_count': 0,
             'last_tick_time': get_ist_now().strftime('%H:%M:%S'),
             'full_mode_subscriptions': 0,
