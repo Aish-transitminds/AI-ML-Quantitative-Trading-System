@@ -47,7 +47,7 @@ def render_model_analysis(app_state: Dict[str, Any]) -> None:
     st.divider()
     
     # Model Comparison
-    st.subheader("🏆 Model Comparison")
+    st.subheader("🏆 Strategy Comparison (Model Performance)")
     
     comparison_rows = []
     for name, result in model_results.items():
@@ -56,14 +56,12 @@ def render_model_analysis(app_state: Dict[str, Any]) -> None:
         test = result.get('test', {})
         val = result.get('validation', {})
         comparison_rows.append({
-            'Model': name.replace('_', ' ').title(),
-            'Val AUC': f"{val.get('roc_auc', 0):.4f}",
-            'Test AUC': f"{test.get('roc_auc', 0):.4f}",
-            'Accuracy': f"{test.get('accuracy', 0):.2%}",
-            'Precision': f"{test.get('precision', 0):.2%}",
-            'Recall': f"{test.get('recall', 0):.2%}",
-            'F1': f"{test.get('f1', 0):.2%}",
-            'Best Threshold': f"{result.get('best_threshold', 0.5):.2f}",
+            'Algorithm': name.replace('_', ' ').title(),
+            'Predictive Power (AUC)': f"{test.get('roc_auc', 0):.4f}",
+            'Overall Accuracy': f"{test.get('accuracy', 0):.2%}",
+            'True Profit Rate (Precision)': f"{test.get('precision', 0):.2%}",
+            'Opportunity Capture (Recall)': f"{test.get('recall', 0):.2%}",
+            'Confidence Threshold': f"{result.get('best_threshold', 0.5):.2f}",
         })
     
     if comparison_rows:
@@ -72,31 +70,38 @@ def render_model_analysis(app_state: Dict[str, Any]) -> None:
     
     best_model = app_state.get('best_model_name')
     if best_model:
-        st.success(f"⭐ Selected Model: **{best_model.replace('_', ' ').title()}**")
+        st.success(f"⭐ Active Production Model: **{best_model.replace('_', ' ').title()}**")
     
     st.divider()
     
     # Feature Importance
-    st.subheader("🎯 Feature Importance")
+    st.subheader("🎯 What drives profitability? (Feature Importance)")
     
     feature_importance = app_state.get('feature_importance', {})
     if feature_importance:
         # Take top 15
         sorted_features = sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)[:15]
-        names = [f[0] for f in sorted_features]
+        names = [f[0].replace('_', ' ').title() for f in sorted_features]
         values = [f[1] for f in sorted_features]
         
         fig = go.Figure(go.Bar(
             x=values[::-1],
             y=names[::-1],
             orientation='h',
-            marker_color='#3498db',
+            marker=dict(
+                color=values[::-1],
+                colorscale=['#0F172A', '#3B82F6', '#06B6D4'],
+                line=dict(color='#06B6D4', width=1)
+            ),
         ))
         fig.update_layout(
-            title="Top Feature Importance",
-            xaxis_title="Importance",
-            height=400,
+            title="Top Predictors of a Profitable Trade",
+            xaxis_title="Relative Impact on Prediction",
+            height=450,
             template='plotly_dark',
+            plot_bgcolor='#0B0E14',
+            paper_bgcolor='#0B0E14',
+            margin=dict(l=20, r=20, t=40, b=20)
         )
         st.plotly_chart(fig, use_container_width=True)
     else:

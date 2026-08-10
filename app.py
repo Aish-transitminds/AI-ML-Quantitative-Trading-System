@@ -26,73 +26,156 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for professional styling
+# Custom CSS for premium styling
 st.markdown("""
 <style>
-    /* Dark theme overrides */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    /* Global Typography & Background */
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
     .stApp {
-        background-color: #0e1117;
+        background-color: #0B0E14;
+        color: #E2E8F0;
     }
 
-    /* Header styling */
-    h1 {
-        color: #e0e0e0 !important;
+    /* Headers */
+    h1, h2, h3 {
+        color: #F8FAFC !important;
         font-weight: 700 !important;
+        letter-spacing: -0.02em;
     }
 
-    /* Metric cards */
+    /* Metric cards styling for native Streamlit metrics */
     [data-testid="stMetricValue"] {
-        font-size: 1.2rem !important;
-        font-weight: 600 !important;
+        font-size: 1.5rem !important;
+        font-weight: 700 !important;
+        color: #38BDF8 !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-size: 0.9rem !important;
+        color: #94A3B8 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     /* Status badges */
     .status-live {
-        background: linear-gradient(135deg, #00b894, #00cec9);
+        background: linear-gradient(135deg, #10B981, #059669);
         padding: 4px 12px;
         border-radius: 12px;
         color: white;
         font-weight: 600;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
     }
-
     .status-offline {
-        background: linear-gradient(135deg, #fdcb6e, #e17055);
+        background: linear-gradient(135deg, #F59E0B, #D97706);
         padding: 4px 12px;
         border-radius: 12px;
         color: white;
         font-weight: 600;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
     }
 
-    /* Table styling */
-    .dataframe {
-        font-size: 0.85rem !important;
+    /* Custom Grid Cards */
+    .grid-card {
+        background: #151A23;
+        border: 1px solid #2A3241;
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        margin-bottom: 15px;
+    }
+    .grid-card:hover {
+        transform: translateY(-2px);
+        border-color: #38BDF8;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 12px rgba(56, 189, 248, 0.1);
+    }
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #2A3241;
+    }
+    .symbol-text {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #F8FAFC;
+    }
+    .price-text {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #38BDF8;
+    }
+    .metric-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+    .metric-label {
+        color: #94A3B8;
+    }
+    .metric-value {
+        color: #E2E8F0;
+        font-weight: 600;
+    }
+    
+    /* Signals */
+    .signal-badge.buy {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34D399;
+        border: 1px solid #10B981;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .signal-badge.sell {
+        background: rgba(239, 68, 68, 0.15);
+        color: #F87171;
+        border: 1px solid #EF4444;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .signal-badge.accept {
+        background: #10B981;
+        color: #000;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+    .signal-badge.avoid {
+        background: #EF4444;
+        color: #FFF;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 700;
     }
 
     /* Sidebar */
     [data-testid="stSidebar"] {
-        background-color: #1a1a2e;
+        background-color: #0F1219;
+        border-right: 1px solid #1E2532;
     }
 
-    /* Warning banner for offline mode */
+    /* Warning banner */
     .offline-banner {
-        background: linear-gradient(135deg, #e74c3c, #c0392b);
-        color: white;
-        padding: 10px 20px;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #F87171;
+        padding: 12px 20px;
         border-radius: 8px;
         text-align: center;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        font-size: 1.1rem;
-    }
-
-    /* Disclaimer footer */
-    .disclaimer {
-        color: #666;
-        font-size: 0.75rem;
-        text-align: center;
-        margin-top: 2rem;
-        padding: 10px;
-        border-top: 1px solid #333;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
     }
 </style>
 """, unsafe_allow_html=True)

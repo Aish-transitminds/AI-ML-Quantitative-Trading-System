@@ -95,8 +95,8 @@ def render_stock_detail(app_state: Dict[str, Any]) -> None:
 
 
 def _render_price_chart(symbol: str, bars: List[Dict]) -> None:
-    """Render price chart with SMMA overlays."""
-    st.subheader("📉 Price & SMMA Chart")
+    """Render premium price chart with SMMA overlays."""
+    st.subheader("📉 Technical Chart")
     
     if not bars:
         st.info("No bar data available for charting")
@@ -104,16 +104,22 @@ def _render_price_chart(symbol: str, bars: List[Dict]) -> None:
     
     # Extract data
     timestamps = [b.get('timestamp', i) for i, b in enumerate(bars)]
+    opens = [b.get('open', b.get('close', 0)) for b in bars]
+    highs = [b.get('high', b.get('close', 0)) for b in bars]
+    lows = [b.get('low', b.get('close', 0)) for b in bars]
     closes = [b.get('close', 0) for b in bars]
+    
     smma20s = [b.get('smma20') for b in bars]
     smma120s = [b.get('smma120') for b in bars]
     
     fig = make_subplots(rows=1, cols=1)
     
-    fig.add_trace(go.Scatter(
-        x=timestamps, y=closes,
-        mode='lines', name='Close Price',
-        line=dict(color='#3498db', width=1.5)
+    # Candlestick
+    fig.add_trace(go.Candlestick(
+        x=timestamps, open=opens, high=highs, low=lows, close=closes,
+        name='Price',
+        increasing_line_color='#10B981',
+        decreasing_line_color='#EF4444'
     ))
     
     # Filter None values for SMMA
@@ -124,25 +130,29 @@ def _render_price_chart(symbol: str, bars: List[Dict]) -> None:
         fig.add_trace(go.Scatter(
             x=[t for t, _ in valid_smma20],
             y=[v for _, v in valid_smma20],
-            mode='lines', name='SMMA(20)',
-            line=dict(color='#2ecc71', width=2)
+            mode='lines', name='SMMA(20) Fast',
+            line=dict(color='#06B6D4', width=2)
         ))
     
     if valid_smma120:
         fig.add_trace(go.Scatter(
             x=[t for t, _ in valid_smma120],
             y=[v for _, v in valid_smma120],
-            mode='lines', name='SMMA(120)',
-            line=dict(color='#e74c3c', width=2)
+            mode='lines', name='SMMA(120) Slow',
+            line=dict(color='#D946EF', width=2)
         ))
     
     fig.update_layout(
-        title=f"{symbol} — Price & SMMA",
+        title=f"{symbol} — Price Action & SMMA",
         xaxis_title="Time",
         yaxis_title="Price (₹)",
-        height=400,
+        height=500,
         template='plotly_dark',
         showlegend=True,
+        xaxis_rangeslider_visible=False,
+        plot_bgcolor='#0B0E14',
+        paper_bgcolor='#0B0E14',
+        margin=dict(l=40, r=40, t=40, b=40)
     )
     
     st.plotly_chart(fig, use_container_width=True)

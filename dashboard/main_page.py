@@ -44,49 +44,68 @@ def render_main_page(app_state: Dict[str, Any]) -> None:
         all_results = app_state.get('screen_results', {})
         if all_results:
             st.subheader("🔍 LTP-Qualified Stocks (pre-liquidity filter)")
-            _render_stock_table(all_results, show_all=True)
+            _render_stock_grid(all_results, show_all=True)
         return
     
-    _render_stock_table(qualified)
+    _render_stock_grid(qualified)
 
 
-def _render_stock_table(results: Dict, show_all: bool = False) -> None:
-    """Render the stock screening table."""
+def _render_stock_grid(results: Dict, show_all: bool = False) -> None:
+    """Render the stock screening results as premium Grid Cards."""
     if not results:
         st.write("No data available.")
         return
     
-    rows = []
-    for symbol, result in results.items():
-        row = {
-            'Symbol': result.symbol,
-            'LTP': f"₹{result.ltp:.2f}" if result.ltp else 'N/A',
-            'Bid Price': f"₹{result.bid_price:.2f}" if result.bid_price else 'N/A',
-            'Bid Qty': f"{result.bid_quantity:,}" if result.bid_quantity else 'N/A',
-            'Ask Price': f"₹{result.ask_price:.2f}" if result.ask_price else 'N/A',
-            'Ask Qty': f"{result.ask_quantity:,}" if result.ask_quantity else 'N/A',
-            'SMMA20': f"{result.smma_fast:.2f}" if result.smma_fast else 'N/A',
-            'SMMA120': f"{result.smma_slow:.2f}" if result.smma_slow else 'N/A',
-            'SMMA Diff': f"{result.smma_difference:.4f}" if result.smma_difference else 'N/A',
-            'ETQ 5M': f"{result.etq_5m:,}" if result.etq_5m else 'N/A',
-            'ETQ 20M': f"{result.etq_20m:,}" if result.etq_20m else 'N/A',
-            'ETQ 60M': f"{result.etq_60m:,}" if result.etq_60m else 'N/A',
-            'Avg LTP 20M': f"₹{result.avg_ltp_20m:.2f}" if result.avg_ltp_20m else 'N/A',
-            'Avg LTP 60M': f"₹{result.avg_ltp_60m:.2f}" if result.avg_ltp_60m else 'N/A',
-            'Signal': result.signal or '—',
-            'ML Prob': f"{result.ml_probability:.0%}" if result.ml_probability is not None else 'N/A',
-            'Decision': result.decision or '—',
-        }
-        rows.append(row)
+    # We will lay out the cards in 3 columns
+    cols = st.columns(3)
     
-    if rows:
-        df = pd.DataFrame(rows)
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            height=min(len(rows) * 40 + 50, 600),
-        )
-        st.caption(f"Showing {len(rows)} stocks | Last refresh: {datetime.now().strftime('%H:%M:%S')}")
-    else:
-        st.write("No stocks to display.")
+    for idx, (symbol, result) in enumerate(results.items()):
+        col = cols[idx % 3]
+        
+        # Calculate visual metrics
+        spread_pct = (result.ask_price - result.bid_price) / result.ask_price * 100 if result.ask_price else 0
+        imbalance = "🟢 Buy Pressure" if result.bid_quantity > result.ask_quantity else "🔴 Sell Pressure"
+        
+        # Signal badge
+        signal_html = ""
+        if result.signal == "BUY":
+            signal_html = f'<span class="signal-badge buy">📈 BUY</span>'
+        elif result.signal == "SELL":
+            signal_html = f'<span class="signal-badge sell">📉 SELL</span>'
+            
+        decision_html = ""
+        if result.decision == "ACCEPT":
+            decision_html = f'<span class="signal-badge accept">✓ ACCEPT ({result.ml_probability:.0%})</span>'
+        elif result.decision == "AVOID":
+            decision_html = f'<span class="signal-badge avoid">✕ AVOID ({result.ml_probability:.0%})</span>'
+            
+        with col:
+            st.markdown(f"""
+            <div class="grid-card">
+                <div class="card-header">
+                    <span class="symbol-text">{result.symbol}</span>
+                    <span class="price-text">₹{result.ltp:.2f}</span>
+                </div>
+                
+                <div class="metric-row">
+                    <span class="metric-label">SMMA (20 / 120)</span>
+                    <span class="metric-value">{result.smma_fast:.2f} / {result.smma_slow:.2f}</span>
+                </div>
+                
+                <div class="metric-row">
+                    <span class="metric-label">Order Book</span>
+                    <span class="metric-value" title="Spread: {spread_pct:.2f}%">{imbalance}</span>
+                </div>
+                
+                <div class="metric-row">
+                    <span class="metric-label">Volume (ETQ 5m/20m)</span>
+                    <span class="metric-value">{result.etq_5m:,} / {result.etq_20m:,}</span>
+                </div>
+                
+                <div class="metric-row" style="margin-top: 15px; align-items: center;">
+                    {signal_html} {decision_html}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+    st.caption(f"Showing {len(results)} stocks | Last refresh: {datetime.now().strftime('%H:%M:%S')}")
