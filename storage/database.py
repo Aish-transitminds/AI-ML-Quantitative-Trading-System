@@ -116,12 +116,12 @@ class DatabaseManager:
             pnl=row['pnl'],
             profitable=bool(row['profitable']) if row['profitable'] is not None else None,
             status=row['status'],
-            smma20_at_entry=row['smma20_at_entry'],
-            smma120_at_entry=row['smma120_at_entry'],
+            smma_fast_at_entry=row['smma20_at_entry'],
+            smma_slow_at_entry=row['smma120_at_entry'],
             ml_probability=row['ml_probability'],
             ml_decision=row['ml_decision'],
-            features=json.loads(row['features_json']) if row['features_json'] else None,
-            trade_id=row['id']
+            features_at_entry=json.loads(row['features_json']) if row['features_json'] else None,
+            id=row['id']
         )
 
     def insert_trade(self, trade: Trade) -> int:
@@ -142,15 +142,15 @@ class DatabaseManager:
                         trade.entry_timestamp.isoformat(),
                         trade.entry_price,
                         trade.status,
-                        trade.smma20_at_entry,
-                        trade.smma120_at_entry,
+                        trade.smma_fast_at_entry,
+                        trade.smma_slow_at_entry,
                         trade.ml_probability,
                         trade.ml_decision,
-                        json.dumps(trade.features) if trade.features else None
+                        json.dumps(trade.features_at_entry) if trade.features_at_entry else None
                     ))
                     conn.commit()
                     trade_id = cursor.lastrowid
-                    trade.trade_id = trade_id
+                    trade.id = trade_id
                     logger.debug(f"Inserted trade {trade_id} for {trade.symbol}")
                     return trade_id
             except Exception as e:
@@ -159,7 +159,7 @@ class DatabaseManager:
 
     def update_trade(self, trade: Trade):
         """Update an existing trade."""
-        if not trade.trade_id:
+        if not trade.id:
             raise ValueError("Trade ID is required for updating")
             
         query = '''
@@ -181,12 +181,12 @@ class DatabaseManager:
                         trade.pnl,
                         1 if trade.profitable else 0 if trade.profitable is False else None,
                         trade.status,
-                        trade.trade_id
+                        trade.id
                     ))
                     conn.commit()
-                    logger.debug(f"Updated trade {trade.trade_id} for {trade.symbol}")
+                    logger.debug(f"Updated trade {trade.id} for {trade.symbol}")
             except Exception as e:
-                logger.error(f"Error updating trade {trade.trade_id}: {e}")
+                logger.error(f"Error updating trade {trade.id}: {e}")
                 raise
 
     def get_open_trades(self) -> List[Trade]:

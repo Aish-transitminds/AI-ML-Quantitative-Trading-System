@@ -29,7 +29,7 @@ from broker.base import MarketDataProvider
 from broker.factory import create_broker
 from data.models import (
     MarketTick, Bar, CrossoverSignal, Trade,
-    StockScreenResult, FeatureVector, SignalType, Decision,
+    StockScreenResult, FeatureVector, SignalType, Decision, TradeStatus
 )
 from data.instrument_manager import InstrumentManager
 from data.tick_store import TickStore
@@ -513,30 +513,32 @@ class Application:
 
             for t in demo_trades:
                 features_json = t.get('features_json', '{}')
-                if isinstance(features_json, dict):
-                    features_json = json.dumps(features_json)
+                if isinstance(features_json, str):
+                    features_dict = json.loads(features_json)
+                else:
+                    features_dict = features_json
 
-                trade_id = self.db.insert_trade(
+                trade = Trade(
                     symbol=t.get('symbol', ''),
-                    signal=t.get('signal', 'BUY'),
-                    entry_timestamp=t.get('entry_timestamp', ''),
+                    signal=SignalType(t.get('signal', 'BUY')),
+                    entry_timestamp=datetime.fromisoformat(t.get('entry_timestamp', '')) if t.get('entry_timestamp') else None,
                     entry_price=t.get('entry_price', 0),
-                    smma20_at_entry=t.get('smma20', 0),
-                    smma120_at_entry=t.get('smma120', 0),
-                    ml_probability=None,
-                    ml_decision=None,
-                    features_json=features_json,
+                    smma_fast_at_entry=t.get('smma20', 0),
+                    smma_slow_at_entry=t.get('smma120', 0),
+                    features_at_entry=features_dict,
+                    status=TradeStatus.OPEN
                 )
 
+                trade.id = self.db.insert_trade(trade)
+
                 if t.get('exit_price') is not None:
-                    self.db.update_trade(
-                        trade_id=trade_id,
-                        exit_timestamp=t.get('exit_timestamp', ''),
-                        exit_price=t.get('exit_price', 0),
-                        pnl=t.get('pnl', 0),
-                        profitable=t.get('profitable', 0),
-                        status='CLOSED',
-                    )
+                    trade.exit_timestamp = datetime.fromisoformat(t.get('exit_timestamp', '')) if t.get('exit_timestamp') else None
+                    trade.exit_price = t.get('exit_price', 0)
+                    trade.pnl = t.get('pnl', 0)
+                    trade.profitable = t.get('profitable', 0)
+                    trade.status = TradeStatus.CLOSED
+                    
+                    self.db.update_trade(trade)
 
             logger.info(f"Loaded {len(demo_trades)} demo trades into database")
 

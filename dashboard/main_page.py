@@ -77,9 +77,11 @@ def _render_stock_grid(results: Dict, show_all: bool = False) -> None:
             
         decision_html = ""
         if result.decision == "ACCEPT":
-            decision_html = f'<span class="signal-badge accept">✓ ACCEPT ({result.ml_probability:.0%})</span>'
+            prob_str = f"{result.ml_probability:.0%}" if result.ml_probability is not None else "N/A"
+            decision_html = f'<span class="signal-badge accept">✓ ACCEPT ({prob_str})</span>'
         elif result.decision == "AVOID":
-            decision_html = f'<span class="signal-badge avoid">✕ AVOID ({result.ml_probability:.0%})</span>'
+            prob_str = f"{result.ml_probability:.0%}" if result.ml_probability is not None else "N/A"
+            decision_html = f'<span class="signal-badge avoid">✕ AVOID ({prob_str})</span>'
             
         with col:
             html_content = textwrap.dedent(f"""
