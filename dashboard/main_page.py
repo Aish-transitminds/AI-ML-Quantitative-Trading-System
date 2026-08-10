@@ -50,6 +50,8 @@ def render_main_page(app_state: Dict[str, Any]) -> None:
     _render_stock_grid(qualified)
 
 
+import textwrap
+
 def _render_stock_grid(results: Dict, show_all: bool = False) -> None:
     """Render the stock screening results as premium Grid Cards."""
     if not results:
@@ -80,7 +82,7 @@ def _render_stock_grid(results: Dict, show_all: bool = False) -> None:
             decision_html = f'<span class="signal-badge avoid">✕ AVOID ({result.ml_probability:.0%})</span>'
             
         with col:
-            st.markdown(f"""
+            html_content = textwrap.dedent(f"""
             <div class="grid-card">
                 <div class="card-header">
                     <span class="symbol-text">{result.symbol}</span>
@@ -106,6 +108,7 @@ def _render_stock_grid(results: Dict, show_all: bool = False) -> None:
                     {signal_html} {decision_html}
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            """)
+            st.markdown(html_content, unsafe_allow_html=True)
             
     st.caption(f"Showing {len(results)} stocks | Last refresh: {datetime.now().strftime('%H:%M:%S')}")
