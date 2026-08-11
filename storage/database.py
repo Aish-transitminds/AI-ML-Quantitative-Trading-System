@@ -138,10 +138,10 @@ class DatabaseManager:
                     cursor = conn.cursor()
                     cursor.execute(query, (
                         trade.symbol,
-                        trade.signal,
-                        trade.entry_timestamp.isoformat(),
+                        trade.signal.value if hasattr(trade.signal, 'value') else trade.signal,
+                        trade.entry_timestamp.isoformat() if trade.entry_timestamp else None,
                         trade.entry_price,
-                        trade.status,
+                        trade.status.value if hasattr(trade.status, 'value') else trade.status,
                         trade.smma_fast_at_entry,
                         trade.smma_slow_at_entry,
                         trade.ml_probability,
@@ -180,7 +180,7 @@ class DatabaseManager:
                         trade.exit_price,
                         trade.pnl,
                         1 if trade.profitable else 0 if trade.profitable is False else None,
-                        trade.status,
+                        trade.status.value if hasattr(trade.status, 'value') else trade.status,
                         trade.id
                     ))
                     conn.commit()

@@ -84,33 +84,13 @@ def _render_stock_grid(results: Dict, show_all: bool = False) -> None:
             decision_html = f'<span class="signal-badge avoid">✕ AVOID ({prob_str})</span>'
             
         with col:
-            html_content = textwrap.dedent(f"""
-            <div class="grid-card">
-                <div class="card-header">
-                    <span class="symbol-text">{result.symbol}</span>
-                    <span class="price-text">₹{result.ltp:.2f}</span>
-                </div>
-                
-                <div class="metric-row">
-                    <span class="metric-label">SMMA (20 / 120)</span>
-                    <span class="metric-value">{result.smma_fast:.2f} / {result.smma_slow:.2f}</span>
-                </div>
-                
-                <div class="metric-row">
-                    <span class="metric-label">Order Book</span>
-                    <span class="metric-value" title="Spread: {spread_pct:.2f}%">{imbalance}</span>
-                </div>
-                
-                <div class="metric-row">
-                    <span class="metric-label">Volume (ETQ 5m/20m)</span>
-                    <span class="metric-value">{result.etq_5m:,} / {result.etq_20m:,}</span>
-                </div>
-                
-                <div class="metric-row" style="margin-top: 15px; align-items: center;">
-                    {signal_html} {decision_html}
-                </div>
-            </div>
-            """)
+            html_content = f"""<div class="grid-card">
+<div class="card-header"><span class="symbol-text">{result.symbol}</span><span class="price-text">₹{result.ltp:.2f}</span></div>
+<div class="metric-row"><span class="metric-label">SMMA (20 / 120)</span><span class="metric-value">{result.smma_fast:.2f} / {result.smma_slow:.2f}</span></div>
+<div class="metric-row"><span class="metric-label">Order Book</span><span class="metric-value" title="Spread: {spread_pct:.2f}%">{imbalance}</span></div>
+<div class="metric-row"><span class="metric-label">Volume (ETQ 5m/20m)</span><span class="metric-value">{result.etq_5m:,} / {result.etq_20m:,}</span></div>
+<div class="metric-row" style="margin-top: 15px; align-items: center;">{signal_html} {decision_html}</div>
+</div>"""
             st.markdown(html_content, unsafe_allow_html=True)
             
     st.caption(f"Showing {len(results)} stocks | Last refresh: {datetime.now().strftime('%H:%M:%S')}")
