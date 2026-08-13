@@ -2,6 +2,9 @@
 
 A production-quality full-stack application that scans NSE-listed stocks in real-time, applies quantitative screening filters, computes SMMA indicators, detects crossovers, and uses ML models to predict crossover profitability.
 
+## Project Overview
+This system is designed as an institutional-grade stock screener and AI/ML predictor. It connects to live broker APIs to ingest tick data, computes complex order-book and quantitative features (like ETQ and LTQ), detects SMMA state transitions, and evaluates whether a given crossover signal should be ACCEPTED or AVOIDED based on historical ML analysis.
+
 ## Features
 - **Real-time NSE Stock Scanning**: Built on Angel One SmartAPI and FYERS for live market data.
 - **Quantitative Filters**: LTP filter (₹30-₹500) and liquidity filter (Bid/Ask Qty > 1M).
@@ -12,30 +15,52 @@ A production-quality full-stack application that scans NSE-listed stocks in real
 - **Asynchronous Python Backend**: FastAPI-powered backend handling WebSockets, data persistence (SQLite/Parquet), and ML pipelines in real-time.
 - **Offline Demo Mode**: Fully simulates live market conditions, ticks, and chart bars for evaluation purposes without needing active broker credentials.
 
-## Architecture
-```text
-Broker (Angel One / FYERS / Offline Demo)
-  ↓ WebSocket
-Data Pipeline (MarketDataManager → TickStore)
-  ↓
-Bar Builder (1-minute Candlesticks)
-  ↓
-Indicators (SMMA 20/120) & Crossover Manager
-  ↓
-Feature Engine (25 custom ETQ/LTQ/Orderbook features)
-  ↓
-ML Predictor (LR / RF / XGBoost)
-  ↓
-FastAPI Server (REST + WebSockets)
-  ↓
-React Frontend (Vite, TypeScript, Recharts, Lightweight Charts)
+## Architecture (Data Flow & ML Pipeline)
+```mermaid
+flowchart TD
+    A[Broker API <br/> Angel One / FYERS / Offline] -->|WebSocket| B(Market Data Manager)
+    B -->|Tick Data| C(Tick Store)
+    B -->|Tick Data| D(Bar Builder)
+    C -->|Rolling LTQ/ETQ| E(Feature Engine)
+    D -->|1-min Bars| F(Indicators: SMMA)
+    F -->|Detect| G{Crossover Manager}
+    G -->|Signal Detected| E
+    E -->|Compute 25+ Features| H(ML Predictor)
+    H -->|Probability / Decision| I(Signal Explanation)
+    I --> J[FastAPI Server]
+    B -->|Live Data| J
+    J -->|REST / WebSocket| K[React Frontend]
+    K --> L[Dashboard UI]
+
+    %% Interactive Links (Click nodes to open source files)
+    click A "broker/base.py" "View Broker Interface"
+    click B "main.py" "View Data Flow Manager"
+    click C "data/tick_store.py" "View Tick Store"
+    click D "data/bar_builder.py" "View Bar Builder"
+    click E "features/feature_engine.py" "View Feature Engine"
+    click F "indicators/smma.py" "View SMMA Implementation"
+    click G "signals/crossover.py" "View Crossover Detection"
+    click H "ml/predict.py" "View ML Predictor"
+    click I "ml/explain.py" "View Signal Explanation"
+    click J "api_server.py" "View FastAPI Server"
+    click K "web/src/" "View Frontend Code"
 ```
 
-## Technologies
-- **Backend**: Python 3.10+, FastAPI, Uvicorn, scikit-learn, XGBoost, pandas, numpy, SQLite, Parquet.
-- **Frontend**: React, TypeScript, Vite, React Router, Recharts, Lightweight Charts v5.
+## Tech Stack
+### Backend & Data Pipeline
+- **Core**: Python 3.10+
+- **API Server**: FastAPI, Uvicorn, WebSockets
+- **Data Engineering**: pandas, numpy, pyarrow
+- **Machine Learning**: scikit-learn, XGBoost, joblib
+- **Storage**: SQLite (relational data), Parquet (high-volume ticks)
 
-## Quick Start
+### Frontend Dashboard
+- **Framework**: React, TypeScript, Vite
+- **Styling**: Vanilla CSS (glassmorphism/dark mode)
+- **State Management**: Zustand
+- **Charting**: Lightweight Charts v5 (TradingView), Recharts, Framer Motion
+
+## Environment Setup & Configuration
 
 ### 1. Installation
 ```bash
@@ -51,49 +76,96 @@ npm install
 cd ..
 ```
 
-### 2. Run the Application
-The application includes a unified runner that serves both the API and the pre-built React frontend.
+### 2. Configuration
+Copy `.env.example` to `.env` and configure your settings. Magic numbers are intentionally removed from the codebase in favor of centralized settings.
 
-**Offline Demo Mode (Default):**
+Key configurations in `config/settings.py` (overridable via `.env`):
+- `MODE`: `LIVE` or `OFFLINE` (default)
+- `LTP_MIN` / `LTP_MAX`: Screening thresholds
+- `MIN_BID_QTY` / `MIN_ASK_QTY`: Liquidity thresholds
+- `SMMA_FAST` / `SMMA_SLOW`: Indicator periods (default 20, 120)
+- `ML_THRESHOLD`: Decision threshold (default 0.65)
+
+### 3. Broker Setup
+To run against live market data, you must provide valid broker credentials in your `.env` file:
+```env
+BROKER=angel_one # or fyers
+API_KEY=your_api_key
+CLIENT_ID=your_client_id
+PASSWORD=your_password
+TOTP_SECRET=your_totp_secret
+```
+
+## How to Run
+
+**1. Offline Demo Mode (Default):**
 ```bash
 # Starts the backend, uses simulated data, and serves the UI
 python run.py
 ```
 Then navigate to `http://127.0.0.1:8000/` in your browser.
 
-**Development Mode:**
+**2. Development Mode:**
 If you want to run the React development server with hot-reloading alongside the FastAPI backend:
 ```bash
 python run.py --dev
 ```
 
-### 3. Live Mode
-To run against live market data, configure your `.env` file with your broker credentials and set `MODE=LIVE`.
+**3. Start Live Dashboard:**
+Ensure `MODE=LIVE` in your `.env` and run `python run.py`. The dashboard will automatically connect via WebSockets to stream live broker data.
 
-## Methodology Highlights
+## ML & Quantitative Methodology
 
-### SMMA (Smoothed Moving Average)
-- Not an EMA. Formula: `SMMA_t = (SMMA_{t-1} × (N-1) + Price_t) / N`
-- Computed on live 1-minute bars aggregated directly from incoming broker ticks.
+### Data Format & Storage
+- **Relational Data**: SQLite stores normalized trades, signal histories, and ML model performance metrics.
+- **Tick Storage**: Raw high-volume ticks are capped in memory (90 min rolling window) and flushed to Parquet files.
+
+### Feature Engineering
+25+ features are generated at the exact time of crossover, strictly preventing data leakage.
+- **LTQ Features**: Averages over 2m, 5m, ratio between 2m/5m, and acceleration.
+- **Orderbook Features**: Imbalance `(Bid Qty - Ask Qty) / (Bid Qty + Ask Qty)`, spread, and spread percentage.
+- **Price Features**: Returns over 1m, 5m, and 15m.
+- **SMMA Features**: Distance between SMMA20 and SMMA120, and their recent slopes.
+
+### SMMA & Crossover Methodology
+- **SMMA**: Smoothed Moving Average is used, not EMA. Formula: `SMMA_t = (SMMA_{t-1} × (N-1) + Price_t) / N`. It is computed on live 1-minute bars.
+- **Crossovers**: Signals are generated only upon actual state transitions (e.g. SMMA20 crosses above SMMA120).
 
 ### ETQ vs Volume
-- **Volume**: Cumulative daily traded quantity (directly from broker).
+- **Volume**: Cumulative daily traded quantity.
 - **LTQ (Last Traded Quantity)**: Quantity of the most recent individual trade.
-- **ETQ (Estimated Traded Quantity)**: Sum of LTQ over rolling windows (5/20/60 min) to gauge short-term market momentum.
+- **ETQ (Estimated Traded Quantity)**: Sum of LTQ over rolling windows (5m, 20m, 60m) to accurately measure short-term market participation momentum.
 
-### Machine Learning
+### ML Methodology & Evaluation Metrics
 - **Target**: Profitability of a detected crossover. BUY profitable if exit > entry; SELL profitable if exit < entry.
-- **Validation**: Strict chronological split (60% Train, 20% Val, 20% Test) to prevent data leakage.
+- **Validation**: Strict chronological time-series split (60% Train, 20% Val, 20% Test) is used to prevent future data leakage.
 - **Handling Imbalance**: Uses `class_weight='balanced'`.
+- **Evaluation Metrics**: Models are evaluated on traditional metrics (Accuracy, ROC-AUC, F1) as well as critical trading metrics (Win Rate, Total P&L, Profit Factor, Max Drawdown).
 
-## Project Structure
-- `/api_server.py`: FastAPI endpoints and WebSocket routes.
-- `/main.py`: Core application orchestrator, loop, and demo logic.
-- `/data/`: Tick persistence, market data processing, and BarBuilder.
-- `/ml/`: Feature engine, datasets, and model training (LR/RF/XGBoost).
-- `/web/`: React frontend (Pages, Components, Charts, API integration).
-- `/storage/`: SQLite Database manager.
-- `/run.py`: Entry point for launching the system.
+### Explainable AI (XAI)
+To ensure transparency in trading decisions, the system generates human-readable explanations for every ACCEPT/AVOID signal. Instead of using black-box LLMs, explanations are strictly rule-based and derived from the quantitative feature vectors. 
+- **Example ACCEPT**: "LTQ 2-minute average is significantly above 5-minute average. Positive order-book imbalance."
+- **Example AVOID**: "Spread is elevated. Short-term price momentum is negative."
+
+### How to Train Model
+Models are retrained on historical data using the `ModelTrainer` class. You can trigger a retrain via the dashboard's Settings page or by calling the `POST /api/models/retrain` REST endpoint.
+
+## Security Considerations
+- **No Hardcoded Secrets**: All credentials (API keys, passwords, TOTP) are managed via `.env` variables and NEVER committed to the repository (enforced via `.gitignore`).
+- **No Log Leaks**: The structured logging module ensures credentials are never printed to `logs/application.log`.
+
+## Packaging Instructions (Windows EXE)
+A PyInstaller spec file is provided to bundle the Python backend and React frontend into a standalone Windows executable.
+1. Build the React frontend: `cd web && npm run build`
+2. Run the packaging script: `python build_exe.py`
+3. The executable will be generated in the `dist/` directory.
+
+## Demo Instructions
+Follow the steps in `DEMO_SCRIPT.md` to conduct a comprehensive offline demonstration of the software's capabilities.
+
+## Known Limitations
+- The system heavily relies on broker API stability. In `LIVE` mode, frequent API rate-limiting or WebSocket disconnections may impact realtime ETQ calculations.
+- Machine Learning models predict based on historical patterns; market regime changes will require retraining.
 
 ## Disclaimer
 This is a technical assignment and research application. It does NOT guarantee profitable trading. ML predictions represent historical pattern analysis, not financial advice.

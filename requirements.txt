@@ -15,7 +15,7 @@ joblib>=1.3.0
 # Visualization (backend chart data)
 plotly>=5.18.0
 
-# API Server (replaces Streamlit)
+# API Server
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 websockets>=12.0

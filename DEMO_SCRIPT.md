@@ -10,7 +10,7 @@
 
 ### 1. Launch Application (0:00 - 0:30)
 ```bash
-streamlit run app.py
+python run.py
 ```
 - Show terminal output with startup logs
 - Show browser opening automatically

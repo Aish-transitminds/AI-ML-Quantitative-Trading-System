@@ -6,12 +6,12 @@ Coordinates all subsystems:
     3. SMMA calculation and crossover detection
     4. Feature computation and ML prediction
     5. Trade management and P&L tracking
-    6. State exposure for the Streamlit dashboard
+    6. State exposure for the React dashboard
 
 Concurrency Architecture:
     Thread 1 (WebSocket): Broker SDK manages internally
     Thread 2 (Data Processor): Runs in on_tick callback (WebSocket thread)
-    Thread 3 (Streamlit): Reads shared state via ApplicationState
+    Thread 3 (FastAPI/React): Reads shared state via ApplicationState
 
 All shared state access is thread-safe via locks and immutable snapshots.
 """
@@ -54,7 +54,7 @@ logger = get_logger("main")
 class ApplicationState:
     """Thread-safe shared application state for dashboard access.
 
-    The Streamlit dashboard reads from this state object.
+    The FastAPI dashboard endpoints read from this state object.
     The data processing pipeline writes to it.
     """
 
@@ -244,6 +244,35 @@ class Application:
 
         self.data_manager = MarketDataManager(broker, self.db)
         self.data_manager.instruments.load_instruments(instruments)
+
+        # Load demo bars into application state for offline/demo mode
+        try:
+            from demo.sample_data_generator import load_demo_bars
+            for inst in instruments:
+                sym = inst.get('symbol')
+                if not sym:
+                    continue
+                raw_bars = load_demo_bars(sym)
+                # Normalize timestamps to ISO strings for JSON serialization
+                normalized = []
+                for b in raw_bars:
+                    ts = b.get('timestamp')
+                    if hasattr(ts, 'isoformat'):
+                        ts_str = ts.isoformat()
+                    else:
+                        ts_str = str(ts)
+                    normalized.append({
+                        'timestamp': ts_str,
+                        'open': b.get('open'),
+                        'high': b.get('high'),
+                        'low': b.get('low'),
+                        'close': b.get('close'),
+                    })
+                if normalized:
+                    self.state.update_bars_data(sym, normalized)
+        except Exception:
+            # If loading demo bars fails, continue without blocking startup
+            logger.exception('Failed to load demo bars into state')
 
         # Initialize feature engine
         self.feature_engine = FeatureEngine(self.data_manager.tick_store)
@@ -691,7 +720,7 @@ class Application:
         logger.info("Application stopped")
 
 
-# Global application instance (singleton for Streamlit session)
+# Global application instance (singleton for API session)
 _app_instance: Optional[Application] = None
 _app_lock = threading.Lock()
 
