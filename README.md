@@ -1,4 +1,4 @@
-# AI/ML Stock Market Screening and Analysis System
+# QuantumGrow: AI/ML Stock Market Screening and Analysis System
 
 A production-quality full-stack application that scans NSE-listed stocks in real-time, applies quantitative screening filters, computes SMMA indicators, detects crossovers, and uses ML models to predict crossover profitability.
 
