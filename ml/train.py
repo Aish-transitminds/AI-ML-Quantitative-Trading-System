@@ -283,22 +283,20 @@ class ModelTrainer:
             test = result.get('test', {})
             val = result.get('validation', {})
             
-            self._db.insert_model_metrics(
-                model_name=name,
-                trained_at=datetime.now().isoformat(),
-                dataset_size=0,  # Will be set properly
-                train_size=0,
-                test_size=0,
-                accuracy=test.get('accuracy', 0),
-                precision_score=test.get('precision', 0),
-                recall=test.get('recall', 0),
-                f1=test.get('f1', 0),
-                roc_auc=test.get('roc_auc', 0),
-                best_threshold=result.get('best_threshold', 0.5),
-                feature_importance_json=json.dumps(
-                    test.get('feature_importance', {}), default=str
-                ),
-            )
+            self._db.insert_model_metrics({
+                'model_name': name,
+                'trained_at': datetime.now().isoformat(),
+                'dataset_size': 0,  # Will be set properly
+                'train_size': 0,
+                'test_size': 0,
+                'accuracy': test.get('accuracy', 0),
+                'precision_score': test.get('precision', 0),
+                'recall': test.get('recall', 0),
+                'f1': test.get('f1', 0),
+                'roc_auc': test.get('roc_auc', 0),
+                'best_threshold': result.get('best_threshold', 0.5),
+                'feature_importance': test.get('feature_importance', {})
+            })
 
 
 def _clean_for_json(obj: Any) -> Any:

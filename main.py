@@ -581,6 +581,33 @@ class Application:
                 )
 
             self.data_manager._screen_results[symbol] = result
+            
+            # Inject dummy historical bars for chart rendering in offline mode
+            import datetime
+            from data.models import Bar
+            demo_bars = []
+            curr_time = get_ist_now() - datetime.timedelta(minutes=60)
+            curr_price = price * 0.95
+            for i in range(60):
+                change = curr_price * rng.normal(0, 0.002)
+                open_p = curr_price
+                close_p = curr_price + change
+                high_p = max(open_p, close_p) + abs(curr_price * rng.normal(0, 0.001))
+                low_p = min(open_p, close_p) - abs(curr_price * rng.normal(0, 0.001))
+                b = Bar(
+                    timestamp=curr_time,
+                    symbol=symbol,
+                    open=round(open_p, 2),
+                    high=round(high_p, 2),
+                    low=round(low_p, 2),
+                    close=round(close_p, 2),
+                    volume=int(rng.randint(1000, 50000)),
+                    is_complete=True
+                )
+                demo_bars.append(b)
+                curr_price = close_p
+                curr_time += datetime.timedelta(minutes=1)
+            self.data_manager.bar_builder._bars[symbol] = demo_bars
 
         # Update shared state
         self.state.update_screen_results(self.data_manager._screen_results)
@@ -598,6 +625,7 @@ class Application:
             trades_dicts = []
             for t in all_trades:
                 trades_dicts.append({
+                    'id': t.id,
                     'symbol': t.symbol,
                     'signal': t.signal.value if isinstance(t.signal, SignalType) else t.signal,
                     'entry_timestamp': t.entry_timestamp.isoformat() if isinstance(t.entry_timestamp, datetime) else str(t.entry_timestamp),
@@ -619,10 +647,34 @@ class Application:
         while self._running:
             try:
                 if self.data_manager:
+                    screen_results = self.data_manager.get_screen_results()
                     self.state.update_status(self.data_manager.status)
-                    self.state.update_screen_results(
-                        self.data_manager.get_screen_results()
-                    )
+                    self.state.update_screen_results(screen_results)
+                    
+                    # Update bars for charting
+                    for symbol in screen_results.keys():
+                        bars = self.data_manager.bar_builder.get_bars(symbol)
+                        bars_dicts = []
+                        for b in bars:
+                            bars_dicts.append({
+                                'timestamp': b.timestamp.isoformat(),
+                                'open': b.open,
+                                'high': b.high,
+                                'low': b.low,
+                                'close': b.close,
+                                'volume': b.volume
+                            })
+                        curr_bar = self.data_manager.bar_builder.get_current_bar(symbol)
+                        if curr_bar:
+                            bars_dicts.append({
+                                'timestamp': curr_bar.timestamp.isoformat(),
+                                'open': curr_bar.open,
+                                'high': curr_bar.high,
+                                'low': curr_bar.low,
+                                'close': curr_bar.close,
+                                'volume': curr_bar.volume
+                            })
+                        self.state.update_bars_data(symbol, bars_dicts)
                 time.sleep(settings.DASHBOARD_REFRESH_SECONDS)
             except Exception as e:
                 logger.error(f"Status update error: {e}")

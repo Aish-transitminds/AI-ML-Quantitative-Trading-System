@@ -1,145 +1,99 @@
 # AI/ML Stock Market Screening and Analysis System
 
-A production-quality Python application that scans NSE-listed stocks in real-time, applies quantitative screening filters, computes SMMA indicators, detects crossovers, and uses ML models to predict crossover profitability.
+A production-quality full-stack application that scans NSE-listed stocks in real-time, applies quantitative screening filters, computes SMMA indicators, detects crossovers, and uses ML models to predict crossover profitability.
 
 ## Features
-- Real-time NSE stock scanning via Angel One SmartAPI
-- LTP filter (₹30-₹500) and liquidity filter (Bid/Ask Qty > 1M)
-- SMMA(20)/SMMA(120) crossover detection
-- LTQ/ETQ-based feature engineering (25 features)
-- ML models: Logistic Regression, Random Forest, XGBoost
-- Chronological train/val/test split (no data leakage)
-- Explainable ACCEPT/AVOID decisions
-- Professional Streamlit dashboard
-- Offline demo mode with simulated data
-- Windows EXE packaging
+- **Real-time NSE Stock Scanning**: Built on Angel One SmartAPI and FYERS for live market data.
+- **Quantitative Filters**: LTP filter (₹30-₹500) and liquidity filter (Bid/Ask Qty > 1M).
+- **Advanced Technicals**: SMMA(20) / SMMA(120) moving average crossover detection.
+- **Machine Learning Predictor**: Logistic Regression, Random Forest, XGBoost trained to predict crossover profitability.
+- **Extensive Feature Engineering**: 25+ features including ETQ (Estimated Traded Quantity), LTQ, Order Imbalance, and SMMA distances.
+- **State-of-the-art Web Dashboard**: Built with React, TypeScript, and Lightweight Charts for a professional, responsive UI.
+- **Asynchronous Python Backend**: FastAPI-powered backend handling WebSockets, data persistence (SQLite/Parquet), and ML pipelines in real-time.
+- **Offline Demo Mode**: Fully simulates live market conditions, ticks, and chart bars for evaluation purposes without needing active broker credentials.
 
 ## Architecture
-```
-Broker (Angel One / FYERS)
+```text
+Broker (Angel One / FYERS / Offline Demo)
   ↓ WebSocket
-Data Pipeline (Tick Store → Bar Builder)
+Data Pipeline (MarketDataManager → TickStore)
   ↓
-Indicators (SMMA 20/120)
+Bar Builder (1-minute Candlesticks)
   ↓
-Signals (Crossover Detection)
+Indicators (SMMA 20/120) & Crossover Manager
   ↓
-Feature Engine (25 features)
+Feature Engine (25 custom ETQ/LTQ/Orderbook features)
   ↓
 ML Predictor (LR / RF / XGBoost)
   ↓
-Dashboard (Streamlit)
+FastAPI Server (REST + WebSockets)
+  ↓
+React Frontend (Vite, TypeScript, Recharts, Lightweight Charts)
 ```
 
 ## Technologies
-- Python 3.10+
-- Angel One SmartAPI (smartapi-python)
-- Streamlit (dashboard)
-- scikit-learn, XGBoost (ML)
-- pandas, numpy (data processing)
-- SQLite (persistence)
-- Parquet (tick storage)
-- Plotly (charts)
+- **Backend**: Python 3.10+, FastAPI, Uvicorn, scikit-learn, XGBoost, pandas, numpy, SQLite, Parquet.
+- **Frontend**: React, TypeScript, Vite, React Router, Recharts, Lightweight Charts v5.
 
 ## Quick Start
 
-### 1. Clone and Install
+### 1. Installation
 ```bash
 git clone <repo-url>
 cd "AI stock predictor"
+
+# Install backend dependencies
 pip install -r requirements.txt
+
+# Install frontend dependencies (optional, for development)
+cd web
+npm install
+cd ..
 ```
 
-### 2. Configure
+### 2. Run the Application
+The application includes a unified runner that serves both the API and the pre-built React frontend.
+
+**Offline Demo Mode (Default):**
 ```bash
-cp .env.example .env
-# Edit .env with your broker credentials
+# Starts the backend, uses simulated data, and serves the UI
+python run.py
 ```
+Then navigate to `http://127.0.0.1:8000/` in your browser.
 
-### 3. Run (Offline Demo)
+**Development Mode:**
+If you want to run the React development server with hot-reloading alongside the FastAPI backend:
 ```bash
-# MODE=OFFLINE is the default
-streamlit run app.py
+python run.py --dev
 ```
 
-### 4. Run (Live Mode)
-```bash
-# Set MODE=LIVE and broker credentials in .env
-streamlit run app.py
-```
+### 3. Live Mode
+To run against live market data, configure your `.env` file with your broker credentials and set `MODE=LIVE`.
 
-## Configuration
-All parameters in `config/settings.py`:
-- LTP range, liquidity thresholds
-- SMMA periods (20, 120)
-- ETQ/LTQ windows
-- ML threshold and training parameters
+## Methodology Highlights
 
-## SMMA Methodology
-- Smoothed Moving Average (NOT EMA)
-- Formula: SMMA_t = (SMMA_{t-1} × (N-1) + Price_t) / N
-- Initial SMMA = SMA of first N values
-- Computed on 1-minute bars from live ticks
-- SMMA(20) = fast, SMMA(120) = slow
+### SMMA (Smoothed Moving Average)
+- Not an EMA. Formula: `SMMA_t = (SMMA_{t-1} × (N-1) + Price_t) / N`
+- Computed on live 1-minute bars aggregated directly from incoming broker ticks.
 
-## Crossover Detection
-- BUY: SMMA20 crosses above SMMA120
-- SELL: SMMA20 crosses below SMMA120
-- State machine prevents duplicate signals
-- Only actual transitions trigger signals
+### ETQ vs Volume
+- **Volume**: Cumulative daily traded quantity (directly from broker).
+- **LTQ (Last Traded Quantity)**: Quantity of the most recent individual trade.
+- **ETQ (Estimated Traded Quantity)**: Sum of LTQ over rolling windows (5/20/60 min) to gauge short-term market momentum.
 
-## ETQ vs Volume
-- **Volume**: Cumulative daily traded quantity (from broker)
-- **LTQ**: Quantity of the most recent trade
-- **ETQ**: Sum of LTQ over a rolling window (5/20/60 min)
-- ETQ ≠ Volume. ETQ is calculated from individual trade quantities.
-
-## ML Methodology
-- Target: Whether crossover is eventually profitable
-- BUY profitable: exit_price > entry_price
-- SELL profitable: exit_price < entry_price
-- Chronological split: Train 60% → Val 20% → Test 20%
-- No future data in features (leakage prevention)
-- Class imbalance handled via class_weight='balanced'
-- Threshold optimized on validation set only
-
-## Feature Engineering (25 Features)
-LTQ: current, avg_2m, avg_5m, ratio_2m_5m, acceleration, std_5m
-ETQ: 5m, 20m, 60m
-Price: avg_ltp_20m, avg_ltp_60m, return_1m, return_5m, return_15m
-Orderbook: bid_price, bid_qty, ask_price, ask_qty, spread, spread_pct, order_imbalance
-SMMA: smma20, smma120, distance, slope_20, slope_120
-
-## P&L Calculation
-- BUY P&L = exit_price - entry_price
-- SELL P&L = entry_price - exit_price
-- Positive = profitable, Negative = losing
-
-## Testing
-```bash
-pytest tests/ -v
-pytest tests/ -v --cov=. --cov-report=term-missing
-```
-
-## Windows EXE
-```bash
-python build_exe.py
-# Output: dist/StockScreener/StockScreener.exe
-```
+### Machine Learning
+- **Target**: Profitability of a detected crossover. BUY profitable if exit > entry; SELL profitable if exit < entry.
+- **Validation**: Strict chronological split (60% Train, 20% Val, 20% Test) to prevent data leakage.
+- **Handling Imbalance**: Uses `class_weight='balanced'`.
 
 ## Project Structure
-(list all directories and key files)
-
-## Security
-- Credentials via .env (never committed)
-- .gitignore excludes .env, logs, data
-- No hardcoded API keys
-
-## Known Limitations
-- WebSocket limit: 1,000 tokens per session
-- SMMA needs 120 bars to initialize
-- ML requires 50+ closed trades
-- Offline mode uses simulated data
+- `/api_server.py`: FastAPI endpoints and WebSocket routes.
+- `/main.py`: Core application orchestrator, loop, and demo logic.
+- `/data/`: Tick persistence, market data processing, and BarBuilder.
+- `/ml/`: Feature engine, datasets, and model training (LR/RF/XGBoost).
+- `/web/`: React frontend (Pages, Components, Charts, API integration).
+- `/storage/`: SQLite Database manager.
+- `/run.py`: Entry point for launching the system.
 
 ## Disclaimer
 This is a technical assignment and research application. It does NOT guarantee profitable trading. ML predictions represent historical pattern analysis, not financial advice.

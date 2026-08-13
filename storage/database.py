@@ -88,6 +88,11 @@ class DatabaseManager:
             updated_at TEXT DEFAULT (datetime('now'))
         );
         
+        CREATE TABLE IF NOT EXISTS watchlist (
+            symbol TEXT PRIMARY KEY,
+            added_at TEXT DEFAULT (datetime('now'))
+        );
+        
         CREATE INDEX IF NOT EXISTS idx_instruments_symbol ON instruments(symbol);
         CREATE INDEX IF NOT EXISTS idx_trades_symbol ON crossover_trades(symbol);
         CREATE INDEX IF NOT EXISTS idx_trades_status ON crossover_trades(status);
@@ -376,4 +381,43 @@ class DatabaseManager:
                     conn.commit()
             except Exception as e:
                 logger.error(f"Error setting state for {key}: {e}")
+                raise
+
+    def get_watchlist(self) -> List[str]:
+        """Get all symbols in the watchlist."""
+        query = "SELECT symbol FROM watchlist ORDER BY added_at DESC"
+        with self._lock:
+            try:
+                with self.get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(query)
+                    return [row['symbol'] for row in cursor.fetchall()]
+            except Exception as e:
+                logger.error(f"Error getting watchlist: {e}")
+                return []
+
+    def add_to_watchlist(self, symbol: str):
+        """Add a symbol to the watchlist."""
+        query = "INSERT OR IGNORE INTO watchlist (symbol) VALUES (?)"
+        with self._lock:
+            try:
+                with self.get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(query, (symbol,))
+                    conn.commit()
+            except Exception as e:
+                logger.error(f"Error adding {symbol} to watchlist: {e}")
+                raise
+
+    def remove_from_watchlist(self, symbol: str):
+        """Remove a symbol from the watchlist."""
+        query = "DELETE FROM watchlist WHERE symbol = ?"
+        with self._lock:
+            try:
+                with self.get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(query, (symbol,))
+                    conn.commit()
+            except Exception as e:
+                logger.error(f"Error removing {symbol} from watchlist: {e}")
                 raise
