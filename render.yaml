@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: quantumgrow-ai
+    env: docker
+    plan: free # Change to starter/pro if you need more RAM for the ML models
+    healthCheckPath: /
+    envVars:
+      - key: MODE
+        value: OFFLINE # Or LIVE if you configure broker credentials
+      - key: PORT
+        value: 8000
