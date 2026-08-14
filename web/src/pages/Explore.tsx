@@ -29,7 +29,7 @@ export default function Explore() {
 
       {/* Top AI Picks Section */}
       <section style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexDirection: 'column', gap: '12px' }}>
           <div>
             <h1 style={{ fontSize: 'clamp(18px, 5vw, 24px)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>Top AI Picks</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(12px, 3vw, 14px)' }}>Stocks with the highest algorithmic confidence for upward momentum.</p>
