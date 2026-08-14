@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../stores/useStore';
 import StockCard from '../components/dashboard/StockCard';
+import TradingLegends from '../components/dashboard/TradingLegends';
 
 export default function Explore() {
   const { stocks, fetchStocks } = useStore();
@@ -56,6 +57,9 @@ export default function Explore() {
           ))}
         </div>
       </section>
+
+      {/* Inspirational Trading Legends Section */}
+      <TradingLegends />
     </div>
   );
 }
