@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../stores/useStore';
 import { formatPrice, formatCompact } from '../utils/formatters';
 
 export default function ProMarketData() {
   const { stocks, fetchStocks } = useStore();
   const [filter, setFilter] = useState('all');
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchStocks();
@@ -23,7 +25,7 @@ export default function ProMarketData() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#0066FF', marginBottom: '8px' }}>Pro: Raw Market Data</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Assignment 1 Compliance: Real-time tick analysis, market depth, and ML indicators.</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Assignment 1 Compliance: Real-time tick analysis, market depth, and ML indicators. Click any row to view live graphs.</p>
         </div>
         
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -67,7 +69,14 @@ export default function ProMarketData() {
                 : 0;
 
               return (
-                <tr key={stock.symbol}>
+                <tr 
+                  key={stock.symbol} 
+                  onClick={() => navigate(`/stock/${stock.symbol}`)}
+                  style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  title="Click to view live graphs and detailed AI analysis"
+                >
                   <td style={{ fontWeight: 600 }}>{stock.symbol}</td>
                   <td>
                     <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: isQualified ? 'rgba(0, 208, 156, 0.1)' : 'var(--bg-hover)', color: isQualified ? 'var(--profit)' : 'var(--text-muted)' }}>
