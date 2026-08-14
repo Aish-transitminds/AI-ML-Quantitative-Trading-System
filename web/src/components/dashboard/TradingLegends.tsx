@@ -5,7 +5,7 @@ const legends = [
     name: "Rakesh Jhunjhunwala",
     title: "The Big Bull of India",
     quote: "Respect the market. Have an open mind. Know what to stake. Know when to take a loss. Be responsible.",
-    image: "/images/rakesh.png",
+    image: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Rakesh_Jhunjhunwala.jpg",
     gradient: "linear-gradient(135deg, #1E1E2A 0%, #2D1B2E 100%)",
     accent: "#FF6B6B"
   },
@@ -21,7 +21,7 @@ const legends = [
     name: "Jim Simons",
     title: "The Quant King",
     quote: "We search through historical data looking for anomalous patterns that we would not expect to occur at random.",
-    image: "/images/jim_simons.png",
+    image: "https://upload.wikimedia.org/wikipedia/commons/e/e0/James_Simons_2007.jpg",
     gradient: "linear-gradient(135deg, #1F1C2C 0%, #232526 100%)",
     accent: "#9D4EDD"
   }
@@ -29,7 +29,7 @@ const legends = [
 
 export default function TradingLegends() {
   return (
-    <div style={{ marginTop: '64px', marginBottom: '48px' }}>
+    <div style={{ marginTop: '64px', marginBottom: '48px', padding: '0 clamp(16px, 5vw, 32px)' }}>
       <div style={{ marginBottom: '32px', textAlign: 'center' }}>
         <h2 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
           Legends of Trading
@@ -39,7 +39,7 @@ export default function TradingLegends() {
         </p>
       </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 'clamp(16px, 4vw, 32px)', alignItems: 'stretch' }}>
         {legends.map((legend, index) => (
           <motion.div
             key={legend.name}
@@ -50,7 +50,7 @@ export default function TradingLegends() {
             style={{ 
               display: 'flex', 
               flexDirection: 'column', 
-              padding: '32px', 
+              padding: 'clamp(24px, 5vw, 32px)', 
               position: 'relative', 
               overflow: 'hidden', 
               height: '100%',
