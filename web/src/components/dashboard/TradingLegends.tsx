@@ -21,7 +21,7 @@ const legends = [
     name: "Jim Simons",
     title: "The Quant King",
     quote: "We search through historical data looking for anomalous patterns that we would not expect to occur at random.",
-    image: "https://www.simonsfoundation.org/wp-content/uploads/2017/08/Jim-Simons-Portrait-2017-Web.jpg",
+    image: "/images/jim_simons.png",
     gradient: "linear-gradient(135deg, #1F1C2C 0%, #232526 100%)",
     accent: "#9D4EDD"
   }
