@@ -5,7 +5,7 @@ const legends = [
     name: "Rakesh Jhunjhunwala",
     title: "The Big Bull of India",
     quote: "Respect the market. Have an open mind. Know what to stake. Know when to take a loss. Be responsible.",
-    image: "https://etimg.etb2bimg.com/photo/93556093.cms",
+    image: "/images/rakesh.png",
     gradient: "linear-gradient(135deg, #1E1E2A 0%, #2D1B2E 100%)",
     accent: "#FF6B6B"
   },
