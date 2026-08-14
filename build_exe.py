@@ -34,7 +34,7 @@ def build():
     
     subprocess.run(cmd, check=True)
     
-    print("\n✅ Build complete!")
+    print("\n[SUCCESS] Build complete!")
     print("Your executable is located in the 'dist' folder.")
     print("Executable name: dist/QuantumGrow.exe")
 

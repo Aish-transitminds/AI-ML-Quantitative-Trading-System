@@ -5,7 +5,7 @@ import { Search } from 'lucide-react';
 import { formatPrice } from '../../utils/formatters';
 
 export default function Layout() {
-  const { wsConnected, searchStocks, searchResults, isProMode, toggleProMode } = useStore();
+  const { status, wsConnected, searchStocks, searchResults, isProMode, toggleProMode } = useStore();
   const [query, setQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const location = useLocation();
@@ -46,6 +46,17 @@ export default function Layout() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>Q</div>
           <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>QuantumGrow</span>
+          
+          {/* Live / Offline Mode Badge */}
+          {status?.mode === 'LIVE' ? (
+            <div style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(0, 200, 83, 0.1)', color: '#00C853', fontSize: '11px', fontWeight: 700, marginLeft: '8px', border: '1px solid rgba(0, 200, 83, 0.2)' }}>
+              LIVE — BROKER DATA
+            </div>
+          ) : (
+            <div style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(255, 152, 0, 0.1)', color: '#FF9800', fontSize: '11px', fontWeight: 700, marginLeft: '8px', border: '1px solid rgba(255, 152, 0, 0.2)' }}>
+              OFFLINE DEMO — SIMULATED DATA
+            </div>
+          )}
         </div>
 
         {/* Global Search */}
