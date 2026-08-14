@@ -5,19 +5,19 @@ const legends = [
     name: "Rakesh Jhunjhunwala",
     title: "The Big Bull of India",
     quote: "Respect the market. Have an open mind. Know what to stake. Know when to take a loss. Be responsible.",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Rakesh_Jhunjhunwala.jpg/800px-Rakesh_Jhunjhunwala.jpg"
+    image: "https://images.livemint.com/img/2022/08/14/1600x900/Rakesh_Jhunjhunwala_1660447035544_1660447035767_1660447035767.PNG"
   },
   {
     name: "Warren Buffett",
     title: "The Oracle of Omaha",
     quote: "The stock market is a device for transferring money from the impatient to the patient.",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Warren_Buffett_KU_School_of_Business_2017.jpg/800px-Warren_Buffett_KU_School_of_Business_2017.jpg"
+    image: "https://image.cnbcfm.com/api/v1/image/107228941-1682027700192-gettyimages-1240375220-NOMAHA_BERKSHIRE_HATHAWAY.jpeg"
   },
   {
     name: "Jim Simons",
     title: "The Quant King",
     quote: "We search through historical data looking for anomalous patterns that we would not expect to occur at random.",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Jim_Simons_1993.jpg/800px-Jim_Simons_1993.jpg"
+    image: "https://d1e00ek4ebabms.cloudfront.net/production/2c892b15-99d9-482d-a2f0-ce8c230559eb.jpg"
   }
 ];
 
@@ -29,7 +29,7 @@ export default function TradingLegends() {
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>Timeless wisdom from the masters of the market.</p>
       </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', alignItems: 'stretch' }}>
         {legends.map((legend, index) => (
           <motion.div
             key={legend.name}
@@ -37,19 +37,18 @@ export default function TradingLegends() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
-            style={{ display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', overflow: 'hidden' }}
+            style={{ display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', overflow: 'hidden', height: '100%' }}
           >
             {/* Background Accent */}
             <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '100px', height: '100px', background: 'var(--primary)', filter: 'blur(50px)', opacity: 0.1, borderRadius: '50%' }} />
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-              <div style={{ width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border-default)' }}>
+              <div style={{ width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border-default)', flexShrink: 0 }}>
                 <img 
                   src={legend.image} 
                   alt={legend.name} 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                   onError={(e) => { 
-                    // Fallback to a nice generic finance placeholder if Wikipedia image fails
                     e.currentTarget.src = 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=200'; 
                   }} 
                 />
@@ -60,7 +59,7 @@ export default function TradingLegends() {
               </div>
             </div>
             
-            <div style={{ flex: 1, position: 'relative' }}>
+            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
               <span style={{ position: 'absolute', top: '-10px', left: '-10px', fontSize: '40px', color: 'var(--text-muted)', opacity: 0.2, fontFamily: 'serif' }}>"</span>
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', zIndex: 1, position: 'relative' }}>
                 {legend.quote}
