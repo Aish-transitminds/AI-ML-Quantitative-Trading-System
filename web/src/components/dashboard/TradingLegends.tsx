@@ -13,7 +13,7 @@ const legends = [
     name: "Warren Buffett",
     title: "The Oracle of Omaha",
     quote: "The stock market is a device for transferring money from the impatient to the patient.",
-    image: "https://thumbor.forbes.com/thumbor/fit-in/416x416/filters%3Aformat%28jpg%29/https%3A%2F%2Fspecials-images.forbesimg.com%2Fimageserve%2F59d502f931358e542c034e76%2F0x0.jpg",
+    image: "https://cdn.britannica.com/49/223049-050-E3B27218/Warren-Buffett-2015.jpg",
     gradient: "linear-gradient(135deg, #1A202C 0%, #173242 100%)",
     accent: "#4ECCA3"
   },
