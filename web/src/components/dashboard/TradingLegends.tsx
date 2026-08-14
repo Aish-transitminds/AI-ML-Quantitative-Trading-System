@@ -30,23 +30,34 @@ const legends = [
 export default function TradingLegends() {
   return (
     <div style={{ marginTop: '64px', marginBottom: '48px', padding: '0 clamp(16px, 5vw, 32px)' }}>
-      <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        style={{ marginBottom: '32px', textAlign: 'center' }}
+      >
         <h2 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
           Legends of Trading
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '16px', marginTop: '8px', fontWeight: 500 }}>
           Timeless wisdom from the masters of the market.
         </p>
-      </div>
+      </motion.div>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 'clamp(16px, 4vw, 32px)', alignItems: 'stretch' }}>
         {legends.map((legend, index) => (
           <motion.div
             key={legend.name}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
-            whileHover={{ y: -8, scale: 1.02 }}
+            initial="initial"
+            whileInView="animate"
+            whileHover="hover"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={{
+              initial: { opacity: 0, y: 40 },
+              animate: { opacity: 1, y: 0, transition: { duration: 0.7, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] } },
+              hover: { y: -12, scale: 1.03, transition: { duration: 0.3, ease: "easeOut" } }
+            }}
             style={{ 
               display: 'flex', 
               flexDirection: 'column', 
@@ -58,26 +69,39 @@ export default function TradingLegends() {
               borderRadius: '24px',
               boxShadow: '0 20px 40px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)',
               border: '1px solid rgba(255,255,255,0.05)',
-              color: 'white'
+              color: 'white',
+              cursor: 'pointer'
             }}
           >
             {/* Massive decorative quote mark in background */}
-            <span style={{ 
+            <motion.span 
+              variants={{
+                initial: { opacity: 0, scale: 0.8, rotate: -10 },
+                animate: { opacity: 0.1, scale: 1, rotate: 0, transition: { duration: 0.8, delay: 0.2 + index * 0.15 } },
+                hover: { opacity: 0.2, scale: 1.1, rotate: 5, transition: { duration: 0.4 } }
+              }}
+              style={{ 
               position: 'absolute', 
               top: '-20px', 
               right: '20px', 
               fontSize: '180px', 
               color: legend.accent, 
-              opacity: 0.1, 
               fontFamily: 'Georgia, serif',
               lineHeight: 1,
               userSelect: 'none'
             }}>
               "
-            </span>
+            </motion.span>
             
             {/* Glowing orb accent */}
-            <div style={{ position: 'absolute', bottom: '-50px', left: '-50px', width: '150px', height: '150px', background: legend.accent, filter: 'blur(80px)', opacity: 0.15, borderRadius: '50%' }} />
+            <motion.div 
+              variants={{
+                initial: { opacity: 0, scale: 0.5 },
+                animate: { opacity: 0.15, scale: 1, transition: { duration: 1, delay: 0.3 + index * 0.15 } },
+                hover: { opacity: 0.3, scale: 1.5, transition: { duration: 0.4 } }
+              }}
+              style={{ position: 'absolute', bottom: '-50px', left: '-50px', width: '150px', height: '150px', background: legend.accent, filter: 'blur(80px)', borderRadius: '50%' }} 
+            />
 
             <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'flex-start', marginBottom: '32px', zIndex: 1 }}>
               <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.9)', lineHeight: 1.7, fontStyle: 'italic', fontWeight: 500 }}>
@@ -86,7 +110,10 @@ export default function TradingLegends() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', zIndex: 1, marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', border: `2px solid ${legend.accent}`, flexShrink: 0, background: '#fff', boxShadow: `0 0 15px ${legend.accent}40` }}>
+              <motion.div 
+                variants={{ hover: { scale: 1.1, boxShadow: `0 0 25px ${legend.accent}80` } }}
+                style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', border: `2px solid ${legend.accent}`, flexShrink: 0, background: '#fff', boxShadow: `0 0 15px ${legend.accent}40` }}
+              >
                 <img 
                   src={legend.image} 
                   alt={legend.name} 
@@ -96,10 +123,10 @@ export default function TradingLegends() {
                     e.currentTarget.src = `https://ui-avatars.com/api/?name=${fallbackName}&background=random&color=fff&size=128&bold=true`; 
                   }} 
                 />
-              </div>
+              </motion.div>
               <div>
-                <div style={{ fontSize: '16px', fontWeight: 700, color: '#fff', letterSpacing: '0.3px' }}>{legend.name}</div>
-                <div style={{ fontSize: '13px', color: legend.accent, fontWeight: 600, marginTop: '2px', textTransform: 'uppercase', letterSpacing: '1px' }}>{legend.title}</div>
+                <motion.div variants={{ hover: { x: 5 } }} style={{ fontSize: '16px', fontWeight: 700, color: '#fff', letterSpacing: '0.3px', transition: 'transform 0.3s ease' }}>{legend.name}</motion.div>
+                <motion.div variants={{ hover: { x: 5 } }} style={{ fontSize: '13px', color: legend.accent, fontWeight: 600, marginTop: '2px', textTransform: 'uppercase', letterSpacing: '1px', transition: 'transform 0.3s ease 0.05s' }}>{legend.title}</motion.div>
               </div>
             </div>
           </motion.div>
