@@ -48,27 +48,27 @@ export default function Investments() {
 
   return (
     <div className="page-content" style={{ padding: 0 }}>
-      <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '32px' }}>Investments</h1>
+      <h1 style={{ fontSize: 'clamp(18px, 5vw, 24px)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '20px' }}>Investments</h1>
 
       {/* Portfolio Overview & Chart */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px', marginBottom: '40px' }}>
-        <div style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '16px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-sm)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth > 768 ? '1.5fr 1fr' : '1fr', gap: '16px', marginBottom: '32px' }}>
+        <div style={{ background: 'var(--bg-card)', padding: 'clamp(16px, 3vw, 32px)', borderRadius: '16px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '8px' }}>Total Portfolio Value</div>
-              <div style={{ fontSize: '36px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
+              <div style={{ fontSize: 'clamp(12px, 2vw, 14px)', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '6px' }}>Total Portfolio Value</div>
+              <div style={{ fontSize: 'clamp(24px, 6vw, 36px)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', lineHeight: 1.2 }}>
                 {formatPrice(current_value + balance)}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 600, color: isProfit ? 'var(--profit)' : 'var(--loss)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 'clamp(12px, 2vw, 14px)', fontWeight: 600, color: isProfit ? 'var(--profit)' : 'var(--loss)' }}>
                   {isProfit ? '+' : ''}{formatPrice(total_return)} ({isProfit ? '+' : ''}{total_return_pct.toFixed(2)}%)
                 </span>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Total Return</span>
+                <span style={{ fontSize: 'clamp(11px, 2vw, 13px)', color: 'var(--text-muted)' }}>Total Return</span>
               </div>
             </div>
           </div>
           
-          <div style={{ height: '200px', width: '100%' }}>
+          <div style={{ height: window.innerWidth > 768 ? '200px' : '150px', width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={mockHistory}>
                 <defs>
@@ -78,7 +78,7 @@ export default function Investments() {
                   </linearGradient>
                 </defs>
                 <Tooltip 
-                  contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: '8px' }}
+                  contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '12px' }}
                   itemStyle={{ color: 'var(--text-primary)' }}
                   formatter={(value: any) => formatPrice(Number(value))}
                   labelStyle={{ display: 'none' }}
@@ -89,15 +89,15 @@ export default function Investments() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '16px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-sm)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: 'var(--bg-card)', padding: 'clamp(16px, 3vw, 32px)', borderRadius: '16px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-sm)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-               <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '8px' }}>Invested</div>
-               <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{formatPrice(total_invested)}</div>
+               <div style={{ fontSize: 'clamp(12px, 2vw, 14px)', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '6px' }}>Invested</div>
+               <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 600, color: 'var(--text-primary)' }}>{formatPrice(total_invested)}</div>
             </div>
             <div>
-               <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '8px' }}>Cash</div>
-               <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>{formatPrice(balance)}</div>
+               <div style={{ fontSize: 'clamp(12px, 2vw, 14px)', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '6px' }}>Cash</div>
+               <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 600, color: 'var(--text-primary)' }}>{formatPrice(balance)}</div>
             </div>
           </div>
 

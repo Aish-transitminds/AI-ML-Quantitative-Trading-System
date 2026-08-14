@@ -28,22 +28,22 @@ export default function Explore() {
       <HeroBanner />
 
       {/* Top AI Picks Section */}
-      <section style={{ marginBottom: '40px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+      <section style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px', flexDirection: 'column', gap: '12px' }}>
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Top AI Picks</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Stocks with the highest algorithmic confidence for upward momentum.</p>
+            <h1 style={{ fontSize: 'clamp(18px, 5vw, 24px)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>Top AI Picks</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(12px, 3vw, 14px)' }}>Stocks with the highest algorithmic confidence for upward momentum.</p>
           </div>
         </div>
         
         {aiPicks.length > 0 ? (
-          <div className="grid-stocks" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+          <div className="grid-stocks" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
             {aiPicks.map((stock, i) => (
               <StockCard key={stock.symbol} stock={stock} index={i} />
             ))}
           </div>
         ) : (
-          <div style={{ padding: '40px', background: 'var(--bg-surface)', borderRadius: '12px', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ padding: '32px 20px', background: 'var(--bg-surface)', borderRadius: '12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
             No strong AI buy signals at the moment.
           </div>
         )}
@@ -51,8 +51,8 @@ export default function Explore() {
 
       {/* Trending Section */}
       <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)' }}>Trending on QuantumGrow</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexDirection: 'column', gap: '12px' }}>
+          <h2 style={{ fontSize: 'clamp(16px, 5vw, 20px)', fontWeight: 600, color: 'var(--text-primary)' }}>Trending on QuantumGrow</h2>
         </div>
         
         <div className="grid-stocks" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>

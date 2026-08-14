@@ -19,6 +19,8 @@ const itemVariants: Variants = {
 };
 
 export default function HeroBanner() {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  
   return (
     <motion.div
       variants={containerVariants}
@@ -26,9 +28,9 @@ export default function HeroBanner() {
       animate="visible"
       style={{
         position: 'relative',
-        padding: '48px 40px',
-        marginBottom: '40px',
-        borderRadius: '24px',
+        padding: isMobile ? '24px 16px' : '48px 40px',
+        marginBottom: isMobile ? '20px' : '40px',
+        borderRadius: isMobile ? '16px' : '24px',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -66,11 +68,11 @@ export default function HeroBanner() {
         style={{ position: 'absolute', right: '20%', bottom: '50%', width: '100px', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', transform: 'rotate(-45deg)' }} 
       />
 
-      <motion.h2 variants={itemVariants} style={{ position: 'relative', zIndex: 1, fontSize: '32px', fontWeight: 800, color: '#ffffff', marginBottom: '16px', letterSpacing: '-0.5px' }}>
+      <motion.h2 variants={itemVariants} style={{ position: 'relative', zIndex: 1, fontSize: isMobile ? 'clamp(18px, 6vw, 28px)' : '32px', fontWeight: 800, color: '#ffffff', marginBottom: isMobile ? '12px' : '16px', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
         The top isn't luck. <span style={{ color: '#00E5FF' }}>It's earned.</span>
       </motion.h2>
       
-      <motion.p variants={itemVariants} style={{ position: 'relative', zIndex: 1, fontSize: '16px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, maxWidth: '800px', fontWeight: 500 }}>
+      <motion.p variants={itemVariants} style={{ position: 'relative', zIndex: 1, fontSize: isMobile ? 'clamp(12px, 3vw, 15px)' : '16px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, maxWidth: '800px', fontWeight: 500, margin: 0 }}>
         Success isn’t built in one leap. It starts with a goal. Turns into a plan. Backed by relentless action. Strengthened by discipline. Fueled by obsession. <span style={{ color: '#ffffff', fontWeight: 600 }}>Step by step — you climb.</span>
       </motion.p>
     </motion.div>
