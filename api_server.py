@@ -20,8 +20,10 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import threading
 import time
+import urllib.request
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -58,7 +60,13 @@ def _get_app() -> Application:
 async def lifespan(app: FastAPI):
     """Start core engine on server startup."""
     _get_app()
+    
+    # Start the keep-awake background task to prevent Render from sleeping
+    keep_awake = asyncio.create_task(keep_awake_task())
+    
     yield
+    
+    keep_awake.cancel()
     if _app_instance:
         _app_instance.stop()
 
@@ -112,6 +120,36 @@ def _serialize_screen_result(result) -> Dict[str, Any]:
 
 
 # ─── REST endpoints ────────────────────────────────────────────────────────
+
+@api.get("/api/ping")
+async def ping():
+    """Lightweight health-check endpoint to keep the server awake."""
+    return {"status": "awake", "timestamp": datetime.now().isoformat()}
+
+
+async def keep_awake_task():
+    """Internal scheduler to ping our own URL every 10 minutes to prevent Render free-tier sleep."""
+    # Render provides RENDER_EXTERNAL_URL automatically. Fallback to localhost if not found.
+    base_url = os.environ.get("RENDER_EXTERNAL_URL")
+    if not base_url:
+        base_url = f"http://127.0.0.1:{os.environ.get('PORT', 8000)}"
+        
+    ping_url = f"{base_url.rstrip('/')}/api/ping"
+    
+    while True:
+        # Sleep for 10 minutes (Render sleeps after 15 mins of inactivity)
+        await asyncio.sleep(10 * 60)
+        try:
+            def _do_ping():
+                req = urllib.request.Request(ping_url, headers={'User-Agent': 'QuantumGrow-KeepAlive/1.0'})
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    return response.status
+            
+            status = await asyncio.to_thread(_do_ping)
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Keep-awake ping sent to {ping_url} (Status: {status})")
+        except Exception as e:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Keep-awake ping failed: {e}")
+
 
 @api.get("/api/status")
 async def get_status():
