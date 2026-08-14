@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useStore } from '../stores/useStore';
 import StockCard from '../components/dashboard/StockCard';
 import TradingLegends from '../components/dashboard/TradingLegends';
+import HeroBanner from '../components/dashboard/HeroBanner';
 
 export default function Explore() {
   const { stocks, fetchStocks } = useStore();
@@ -23,6 +24,9 @@ export default function Explore() {
 
   return (
     <div className="page-content" style={{ padding: 0 }}>
+      {/* Motivational Hero Banner from Pinterest Quote */}
+      <HeroBanner />
+
       {/* Top AI Picks Section */}
       <section style={{ marginBottom: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
