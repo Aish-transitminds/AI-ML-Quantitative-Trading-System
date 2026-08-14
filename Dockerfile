@@ -1,5 +1,5 @@
 # Stage 1: Build the React Frontend
-FROM node:18 AS frontend-builder
+FROM node:20 AS frontend-builder
 WORKDIR /app/web
 COPY web/package*.json ./
 RUN npm install
