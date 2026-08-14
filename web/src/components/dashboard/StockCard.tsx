@@ -25,7 +25,9 @@ export default function StockCard({ stock, index }: StockCardProps) {
   };
 
   const isBuy = stock.signal === 'BUY';
-  const confidence = (stock.ml_probability * 100).toFixed(0);
+  const isSell = stock.signal === 'SELL';
+  const hasSignal = isBuy || isSell;
+  const confidence = stock.ml_probability ? (stock.ml_probability * 100).toFixed(0) : '0';
 
   return (
     <motion.div
@@ -75,7 +77,7 @@ export default function StockCard({ stock, index }: StockCardProps) {
                 <Line 
                   type="monotone" 
                   dataKey="value" 
-                  stroke={isBuy ? 'var(--profit)' : 'var(--loss)'} 
+                  stroke={hasSignal ? (isBuy ? 'var(--profit)' : 'var(--loss)') : 'var(--text-secondary)'} 
                   strokeWidth={2} 
                   dot={false} 
                   isAnimationActive={false}
@@ -88,12 +90,12 @@ export default function StockCard({ stock, index }: StockCardProps) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>AI Prediction</span>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: isBuy ? 'var(--profit)' : 'var(--loss)' }}>
-              {isBuy ? 'Bullish' : 'Bearish'} ({confidence}%)
+            <span style={{ fontSize: '14px', fontWeight: 600, color: hasSignal ? (isBuy ? 'var(--profit)' : 'var(--loss)') : 'var(--text-secondary)' }}>
+              {hasSignal ? (isBuy ? 'Bullish' : 'Bearish') : 'Neutral'} {hasSignal && `(${confidence}%)`}
             </span>
           </div>
-          <div style={{ background: isBuy ? 'var(--primary)' : 'var(--loss)', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 600 }}>
-            {isBuy ? 'BUY' : 'SELL'}
+          <div style={{ background: hasSignal ? (isBuy ? 'var(--primary)' : 'var(--loss)') : 'var(--bg-hover)', color: hasSignal ? 'white' : 'var(--text-muted)', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 600 }}>
+            {hasSignal ? (isBuy ? 'BUY' : 'SELL') : 'WAIT'}
           </div>
         </div>
       </NavLink>
