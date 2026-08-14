@@ -40,7 +40,7 @@ export const MOTION = {
 
 /* API base URL — empty string uses Vite proxy in dev, same-origin in production */
 export const API_BASE = import.meta.env.VITE_API_URL || '';
-export const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.host}/ws`;
+export const WS_URL = import.meta.env.VITE_WS_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
 
 /* Navigation items */
 export const NAV_ITEMS = [
