@@ -5,65 +5,102 @@ const legends = [
     name: "Rakesh Jhunjhunwala",
     title: "The Big Bull of India",
     quote: "Respect the market. Have an open mind. Know what to stake. Know when to take a loss. Be responsible.",
-    image: "https://images.livemint.com/img/2022/08/14/1600x900/Rakesh_Jhunjhunwala_1660447035544_1660447035767_1660447035767.PNG"
+    image: "https://etimg.etb2bimg.com/photo/93556093.cms",
+    gradient: "linear-gradient(135deg, #1E1E2A 0%, #2D1B2E 100%)",
+    accent: "#FF6B6B"
   },
   {
     name: "Warren Buffett",
     title: "The Oracle of Omaha",
     quote: "The stock market is a device for transferring money from the impatient to the patient.",
-    image: "https://image.cnbcfm.com/api/v1/image/107228941-1682027700192-gettyimages-1240375220-NOMAHA_BERKSHIRE_HATHAWAY.jpeg"
+    image: "https://thumbor.forbes.com/thumbor/fit-in/416x416/filters%3Aformat%28jpg%29/https%3A%2F%2Fspecials-images.forbesimg.com%2Fimageserve%2F59d502f931358e542c034e76%2F0x0.jpg",
+    gradient: "linear-gradient(135deg, #1A202C 0%, #173242 100%)",
+    accent: "#4ECCA3"
   },
   {
     name: "Jim Simons",
     title: "The Quant King",
     quote: "We search through historical data looking for anomalous patterns that we would not expect to occur at random.",
-    image: "https://d1e00ek4ebabms.cloudfront.net/production/2c892b15-99d9-482d-a2f0-ce8c230559eb.jpg"
+    image: "https://www.simonsfoundation.org/wp-content/uploads/2017/08/Jim-Simons-Portrait-2017-Web.jpg",
+    gradient: "linear-gradient(135deg, #1F1C2C 0%, #232526 100%)",
+    accent: "#9D4EDD"
   }
 ];
 
 export default function TradingLegends() {
   return (
-    <div style={{ marginTop: '48px', marginBottom: '32px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)' }}>Legends of Trading</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>Timeless wisdom from the masters of the market.</p>
+    <div style={{ marginTop: '64px', marginBottom: '48px' }}>
+      <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+          Legends of Trading
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '16px', marginTop: '8px', fontWeight: 500 }}>
+          Timeless wisdom from the masters of the market.
+        </p>
       </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', alignItems: 'stretch' }}>
         {legends.map((legend, index) => (
           <motion.div
             key={legend.name}
-            className="glass-card"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
-            style={{ display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', overflow: 'hidden', height: '100%' }}
+            transition={{ duration: 0.5, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{ y: -8, scale: 1.02 }}
+            style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              padding: '32px', 
+              position: 'relative', 
+              overflow: 'hidden', 
+              height: '100%',
+              background: legend.gradient,
+              borderRadius: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              color: 'white'
+            }}
           >
-            {/* Background Accent */}
-            <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '100px', height: '100px', background: 'var(--primary)', filter: 'blur(50px)', opacity: 0.1, borderRadius: '50%' }} />
+            {/* Massive decorative quote mark in background */}
+            <span style={{ 
+              position: 'absolute', 
+              top: '-20px', 
+              right: '20px', 
+              fontSize: '180px', 
+              color: legend.accent, 
+              opacity: 0.1, 
+              fontFamily: 'Georgia, serif',
+              lineHeight: 1,
+              userSelect: 'none'
+            }}>
+              "
+            </span>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-              <div style={{ width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border-default)', flexShrink: 0 }}>
+            {/* Glowing orb accent */}
+            <div style={{ position: 'absolute', bottom: '-50px', left: '-50px', width: '150px', height: '150px', background: legend.accent, filter: 'blur(80px)', opacity: 0.15, borderRadius: '50%' }} />
+
+            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'flex-start', marginBottom: '32px', zIndex: 1 }}>
+              <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.9)', lineHeight: 1.7, fontStyle: 'italic', fontWeight: 500 }}>
+                "{legend.quote}"
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', zIndex: 1, marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', border: `2px solid ${legend.accent}`, flexShrink: 0, background: '#fff', boxShadow: `0 0 15px ${legend.accent}40` }}>
                 <img 
                   src={legend.image} 
                   alt={legend.name} 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                   onError={(e) => { 
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=200'; 
+                    const fallbackName = legend.name.replace(' ', '+');
+                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${fallbackName}&background=random&color=fff&size=128&bold=true`; 
                   }} 
                 />
               </div>
               <div>
-                <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>{legend.name}</div>
-                <div style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: 500 }}>{legend.title}</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#fff', letterSpacing: '0.3px' }}>{legend.name}</div>
+                <div style={{ fontSize: '13px', color: legend.accent, fontWeight: 600, marginTop: '2px', textTransform: 'uppercase', letterSpacing: '1px' }}>{legend.title}</div>
               </div>
-            </div>
-            
-            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <span style={{ position: 'absolute', top: '-10px', left: '-10px', fontSize: '40px', color: 'var(--text-muted)', opacity: 0.2, fontFamily: 'serif' }}>"</span>
-              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', zIndex: 1, position: 'relative' }}>
-                {legend.quote}
-              </p>
             </div>
           </motion.div>
         ))}
