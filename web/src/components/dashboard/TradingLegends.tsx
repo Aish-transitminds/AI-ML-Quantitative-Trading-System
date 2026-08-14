@@ -5,7 +5,7 @@ const legends = [
     name: "Rakesh Jhunjhunwala",
     title: "The Big Bull of India",
     quote: "Respect the market. Have an open mind. Know what to stake. Know when to take a loss. Be responsible.",
-    image: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Rakesh_Jhunjhunwala.jpg",
+    image: "/images/rakesh.png?v=3",
     gradient: "linear-gradient(135deg, #1E1E2A 0%, #2D1B2E 100%)",
     accent: "#FF6B6B"
   },
@@ -21,7 +21,7 @@ const legends = [
     name: "Jim Simons",
     title: "The Quant King",
     quote: "We search through historical data looking for anomalous patterns that we would not expect to occur at random.",
-    image: "https://upload.wikimedia.org/wikipedia/commons/e/e0/James_Simons_2007.jpg",
+    image: "/images/jim_simons.png?v=3",
     gradient: "linear-gradient(135deg, #1F1C2C 0%, #232526 100%)",
     accent: "#9D4EDD"
   }
