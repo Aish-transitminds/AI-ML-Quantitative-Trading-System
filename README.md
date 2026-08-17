@@ -140,7 +140,8 @@ Ensure `MODE=LIVE` in your `.env` and run `python run.py`. The dashboard will au
 
 ### ML Methodology & Evaluation Metrics
 - **Target**: Profitability of a detected crossover. BUY profitable if exit > entry; SELL profitable if exit < entry.
-- **Validation**: Strict chronological time-series split (60% Train, 20% Val, 20% Test) is used to prevent future data leakage.
+- **Walk-Forward Validation**: The system uses a strict expanding-window, walk-forward validation methodology for historical predictions. The model only ever trains on trades that occurred *strictly before* the target trade, eliminating all lookahead bias.
+- **Single-Class Protection**: The training loop includes strict integrity checks that return `INSUFFICIENT_DATA` if the training window contains fewer than 50 trades or only possesses a single target class (e.g. 100% profitable).
 - **Handling Imbalance**: Uses `class_weight='balanced'`.
 - **Evaluation Metrics**: Models are evaluated on traditional metrics (Accuracy, ROC-AUC, F1) as well as critical trading metrics (Win Rate, Total P&L, Profit Factor, Max Drawdown).
 
@@ -162,8 +163,9 @@ A PyInstaller spec file is provided to bundle the Python backend and React front
 2. Run the packaging script: `python build_exe.py`
 3. The executable will be generated in the `dist/` directory.
 
-## Demo Instructions
-Follow the steps in `DEMO_SCRIPT.md` to conduct a comprehensive offline demonstration of the software's capabilities.
+## Demo & Diagnostics
+- **Offline Demo**: Follow the steps in `DEMO_SCRIPT.md` to conduct a comprehensive offline demonstration of the software's capabilities.
+- **Live Connection Test**: To verify the broker data pipeline safely, configure your `.env` with real credentials and run `python tests/live_diagnostic.py`. This read-only script tests WebSocket authentication and tick parsing for a small watchlist (e.g. RELIANCE-EQ) without initiating the entire trading application.
 
 ## Known Limitations
 - The system heavily relies on broker API stability. In `LIVE` mode, frequent API rate-limiting or WebSocket disconnections may impact realtime ETQ calculations.
