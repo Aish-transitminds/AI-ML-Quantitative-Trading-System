@@ -20,14 +20,21 @@ This system is designed as an institutional-grade stock screener and AI/ML predi
 ## Architecture (Data Flow & ML Pipeline)
 ```mermaid
 flowchart TD
-    A[Broker API <br/> Angel One / FYERS / Offline] -->|WebSocket| B(Market Data Manager)
+    A[Broker API <br/> Angel One / Offline] -->|WebSocket| B(Market Data Manager)
     B -->|Tick Data| C(Tick Store)
     B -->|Tick Data| D(Bar Builder)
     C -->|Rolling LTQ/ETQ| E(Feature Engine)
     D -->|1-min Bars| F(Indicators: SMMA)
     F -->|Detect| G{Crossover Manager}
     G -->|Signal Detected| E
-    E -->|Compute 25+ Features| H(ML Predictor)
+    
+    %% Walk-Forward ML Training Loop
+    subgraph Walk-Forward Validation
+        E -->|Extract Features| M1(Chronological Split)
+        M1 -->|Train on t-1| M2(Model Trainer)
+        M2 -->|Predict at t| H(ML Predictor)
+    end
+    
     H -->|Probability / Decision| I(Signal Explanation)
     I --> J[FastAPI Server]
     B -->|Live Data| J
@@ -44,6 +51,7 @@ flowchart TD
     click G "signals/crossover.py" "View Crossover Detection"
     click H "ml/predict.py" "View ML Predictor"
     click I "ml/explain.py" "View Signal Explanation"
+    click M2 "ml/train.py" "View Model Trainer"
     click J "api_server.py" "View FastAPI Server"
     click K "web/src/" "View Frontend Code"
 ```
