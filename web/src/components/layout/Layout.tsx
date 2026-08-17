@@ -11,6 +11,23 @@ export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isSwitchingMode, setIsSwitchingMode] = useState(false);
+
+  const handleModeSwitch = async () => {
+    if (!status?.mode || isSwitchingMode) return;
+    const nextMode = status.mode === 'LIVE' ? 'OFFLINE' : 'LIVE';
+    if (!window.confirm(`Switch application mode to ${nextMode}?`)) return;
+    
+    setIsSwitchingMode(true);
+    try {
+      const { api } = await import('../../api/client');
+      await api.switchMode(nextMode);
+    } catch (e: any) {
+      alert(`Failed to switch mode: ${e.message}`);
+    } finally {
+      setIsSwitchingMode(false);
+    }
+  };
 
   // Handle window resize
   useEffect(() => {
@@ -72,17 +89,21 @@ export default function Layout() {
           
           {/* Live / Offline Mode Badge */}
           {!isMobile && (
-            <>
+            <div 
+              onClick={handleModeSwitch}
+              style={{ cursor: isSwitchingMode ? 'wait' : 'pointer', opacity: isSwitchingMode ? 0.7 : 1, transition: 'opacity 0.2s' }}
+              title="Click to switch mode"
+            >
               {status?.mode === 'LIVE' ? (
                 <div style={{ padding: '3px 6px', borderRadius: '4px', background: 'rgba(0, 200, 83, 0.1)', color: '#00C853', fontSize: '9px', fontWeight: 700, marginLeft: '6px', border: '1px solid rgba(0, 200, 83, 0.2)', whiteSpace: 'nowrap' }}>
-                  LIVE
+                  {isSwitchingMode ? 'SWITCHING...' : 'LIVE'}
                 </div>
               ) : (
                 <div style={{ padding: '3px 6px', borderRadius: '4px', background: 'rgba(255, 152, 0, 0.1)', color: '#FF9800', fontSize: '9px', fontWeight: 700, marginLeft: '6px', border: '1px solid rgba(255, 152, 0, 0.2)', whiteSpace: 'nowrap' }}>
-                  DEMO
+                  {isSwitchingMode ? 'SWITCHING...' : 'DEMO'}
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
 

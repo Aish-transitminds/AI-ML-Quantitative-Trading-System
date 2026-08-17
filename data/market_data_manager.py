@@ -81,6 +81,7 @@ class MarketDataManager:
             # Set up tick and disconnect callbacks
             self.broker.set_on_tick_callback(self._on_tick)
             self.broker.set_on_disconnect_callback(self._on_disconnect)
+            self.broker.set_on_connect_callback(self._on_connect)
             
             self._running = True
             return True
@@ -239,24 +240,27 @@ class MarketDataManager:
         if not self._running:
             return
             
-        logger.warning(f"Broker disconnected ({reason}). Attempting reconnect in 5 seconds...")
-        time.sleep(5)
+        logger.warning(f"Broker disconnected ({reason}). Reconnecting in background...")
+        threading.Thread(target=self._reconnect_worker, name="ReconnectWorker", daemon=True).start()
         
+    def _reconnect_worker(self) -> None:
+        """Background worker to handle reconnection and resubscription."""
+        time.sleep(5)
         try:
-            # We must re-establish WebSocket
+            logger.info("Attempting to re-establish WebSocket...")
             self.broker.start_websocket()
-            time.sleep(2)
+            # Wait for the connection to be established. 
+            # In a robust system, we would rely on _on_connect callback to resubscribe.
+            time.sleep(3)
             
             # Re-subscribe tokens we were already tracking
             if self._full_mode_tokens:
-                # Mode 3
                 tokens = list(self._full_mode_tokens)
                 for i in range(0, len(tokens), 50):
                     self.broker.subscribe(tokens[i:i + 50], mode=MarketDataProvider.MODE_FULL)
                     time.sleep(0.1)
                 logger.info(f"Re-subscribed {len(tokens)} tokens to Mode 3")
             
-            # Also re-subscribe Mode 1 for tokens not in full mode
             ltp_tokens = set(self.instruments.get_all_tokens()) - self._full_mode_tokens
             if ltp_tokens:
                 tokens = list(ltp_tokens)
@@ -266,7 +270,10 @@ class MarketDataManager:
                 logger.info(f"Re-subscribed {len(tokens)} tokens to Mode 1")
                 
         except Exception as e:
-            logger.error(f"Reconnection failed: {e}")
+            logger.error(f"Reconnection worker failed: {e}")
+            
+    def _on_connect(self) -> None:
+        logger.info("Broker connection established (lifecycle event).")
             
     @property
     def status(self) -> Dict[str, Any]:

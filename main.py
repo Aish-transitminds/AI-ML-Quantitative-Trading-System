@@ -183,11 +183,89 @@ class Application:
                 self._start_live()
 
             self._running = True
+            self.state.update_status({
+                "mode": actual_mode,
+                "broker": settings.BROKER,
+                "running": True
+            })
             logger.info("Application started successfully")
 
         except Exception as e:
             logger.error(f"Application startup failed: {e}", exc_info=True)
             raise
+
+    def switch_mode(self, new_mode: str) -> bool:
+        """Switch between LIVE and OFFLINE mode at runtime.
+        
+        Args:
+            new_mode: 'LIVE' or 'OFFLINE'
+        
+        Returns:
+            bool: True if switch successful
+        """
+        if new_mode not in ("LIVE", "OFFLINE"):
+            raise ValueError(f"Invalid mode: {new_mode}")
+
+        if not hasattr(self, '_transition_lock'):
+            self._transition_lock = threading.Lock()
+
+        with self._transition_lock:
+            current_mode = self.state.get_snapshot().get("status", {}).get("mode")
+            if current_mode == new_mode:
+                logger.info(f"Already in {new_mode} mode")
+                return True
+
+            logger.info(f"Switching mode from {current_mode} to {new_mode}...")
+            
+            # Stop existing data flow
+            self._running = False
+            if self.data_manager:
+                self.data_manager.stop()
+                self.data_manager = None
+                
+            # Allow background threads to die
+            time.sleep(1.0)
+            
+            # Reset DB state to prevent cross-contamination of trades and models
+            with self.db._lock:
+                with self.db.get_connection() as conn:
+                    conn.execute("DELETE FROM crossover_trades")
+                    conn.execute("DELETE FROM model_metrics")
+                    conn.commit()
+            
+            # Reset ephemeral memory state
+            self.crossover_manager = CrossoverManager()
+            self._smma_history.clear()
+            self.state = ApplicationState()
+            
+            settings.MODE = new_mode
+            
+            # Restart
+            if new_mode == "OFFLINE":
+                self._start_offline()
+            else:
+                self._start_live()
+
+            self._running = True
+            
+            # NOTE: _start_live already starts the status update loop.
+            # _start_offline does not use the status update loop for tick generation,
+            # but we can start it if we want continuous UI updates, or rely on demo generator.
+            if new_mode == "OFFLINE" and not any(t.name == "StatusUpdater" and t.is_alive() for t in threading.enumerate()):
+                threading.Thread(
+                    target=self._status_update_loop,
+                    name="StatusUpdater",
+                    daemon=True,
+                ).start()
+
+            self.state.update_status({
+                "mode": new_mode,
+                "broker": settings.BROKER,
+                "running": True
+            })
+            
+            logger.info(f"Successfully switched to {new_mode} mode")
+            return True
 
     def _start_offline(self) -> None:
         """Start in offline demo mode."""

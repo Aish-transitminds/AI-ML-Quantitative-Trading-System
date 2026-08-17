@@ -28,7 +28,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Header, HTTPException, Depends, Request
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -82,11 +83,28 @@ api = FastAPI(
 
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://localhost:8501", "http://localhost:8000", "http://127.0.0.1:5173", "http://127.0.0.1:8000"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+@api.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+async def verify_admin(x_admin_key: str = Header(None)):
+    expected = os.environ.get("ADMIN_API_KEY", "default-dev-key")
+    if not x_admin_key or x_admin_key != expected:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+class ModeSwitchRequest(BaseModel):
+    mode: str
 
 
 # ─── Helper: serialize dataclass/objects ────────────────────────────────────
@@ -305,7 +323,32 @@ async def get_config():
     }
 
 
-@api.post("/api/models/retrain")
+# Simple rate limiting for mode switch (in-memory, basic)
+_mode_switch_timestamps = []
+
+@api.post("/api/system/mode", dependencies=[Depends(verify_admin)])
+async def switch_mode(payload: ModeSwitchRequest):
+    """Switch application mode at runtime."""
+    now = time.time()
+    global _mode_switch_timestamps
+    # Clean old timestamps (> 60s)
+    _mode_switch_timestamps = [ts for ts in _mode_switch_timestamps if now - ts < 60]
+    if len(_mode_switch_timestamps) > 5:
+        raise HTTPException(status_code=429, detail="Too many mode switch requests. Try again later.")
+    
+    _mode_switch_timestamps.append(now)
+
+    app = _get_app()
+    try:
+        success = app.switch_mode(payload.mode.upper())
+        return {"success": success, "mode": payload.mode.upper()}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api.post("/api/models/retrain", dependencies=[Depends(verify_admin)])
 async def retrain_models():
     """Trigger ML model retraining."""
     app = _get_app()
@@ -415,7 +458,7 @@ async def get_portfolio():
     }
 
 
-@api.post("/api/execute")
+@api.post("/api/execute", dependencies=[Depends(verify_admin)])
 async def execute_trade(payload: dict):
     """Execute a simulated manual trade."""
     app = _get_app()
@@ -449,7 +492,7 @@ async def execute_trade(payload: dict):
     
     return {"success": True, "trade_id": trade.id, "price": current_ltp}
 
-@api.post("/api/trades/{trade_id}/close")
+@api.post("/api/trades/{trade_id}/close", dependencies=[Depends(verify_admin)])
 async def close_trade(trade_id: int):
     """Close an open manual trade."""
     app = _get_app()
@@ -586,7 +629,10 @@ if _web_dist.exists():
     @api.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         """Serve the React SPA for any non-API route."""
-        file_path = _web_dist / full_path
-        if file_path.exists() and file_path.is_file():
-            return FileResponse(str(file_path))
+        try:
+            file_path = (_web_dist / full_path).resolve()
+            if file_path.exists() and file_path.is_file() and file_path.is_relative_to(_web_dist.resolve()):
+                return FileResponse(str(file_path))
+        except (ValueError, RuntimeError):
+            pass
         return FileResponse(str(_web_dist / "index.html"))

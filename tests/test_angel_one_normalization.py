@@ -20,19 +20,19 @@ def test_angel_one_normalization_basic():
     # Raw payload simulating Angel One Mode 3 WebSocket
     payload = {
         "token": "1234",
-        "last_traded_price": 3500.50,
+        "last_traded_price": 350050,
         "last_traded_quantity": 42,
         "volume_trade_for_the_day": 1500000,
         "exchange_feed_time": 1700000000,
         "best_5_data": [
             {
                 "flag": 1,
-                "price": 3500.00,
+                "price": 350000,
                 "quantity": 100
             },
             {
                 "flag": 0,
-                "price": 3501.00,
+                "price": 350100,
                 "quantity": 50
             }
         ]
@@ -70,7 +70,7 @@ def test_angel_one_normalization_paisa_bug():
     payload = {
         "token": "999",
         "last_traded_price": 50000, # 500.00 in paisa
-        "close_price": 490.00,
+        "close_price": 49000,       # 490.00 in paisa
         "last_traded_quantity": 10,
     }
     

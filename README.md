@@ -17,6 +17,13 @@ This system is designed as an institutional-grade stock screener and AI/ML predi
 - **Asynchronous Python Backend**: FastAPI-powered backend handling WebSockets, data persistence (SQLite/Parquet), and ML pipelines in real-time.
 - **Offline Demo Mode**: Fully simulates live market conditions, ticks, and chart bars for evaluation purposes without needing active broker credentials.
 
+## Documentation
+For detailed insights into the specific sub-systems of QuantumGrow, refer to the following documents:
+- [Runtime Mode Architecture](docs/RUNTIME_MODE_ARCHITECTURE.md) - Details on LIVE/OFFLINE state isolation and runtime mode switching.
+- [Security Posture](docs/SECURITY.md) - Information on credential protection, rate-limiting, and network boundaries.
+- [Broker Setup](docs/BROKER_SETUP.md) - Angel One SmartAPI connection and normalization specifics.
+- [Data Pipeline](docs/DATA_PIPELINE.md) - The multi-stage event-driven tick parsing and persistence architecture.
+
 ## Architecture (Data Flow & ML Pipeline)
 ```mermaid
 flowchart TD

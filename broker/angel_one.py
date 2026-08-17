@@ -376,11 +376,11 @@ class AngelOneProvider(MarketDataProvider):
                                 flag = entry.get('flag', entry.get('buySellFlag', 0))
                                 if flag == 1:  # Buy side
                                     if bid_price == 0.0:
-                                        bid_price = float(entry.get('price', entry.get('bestBuyPrice', 0)))
+                                        bid_price = float(entry.get('price', entry.get('bestBuyPrice', 0))) / 100.0
                                         bid_qty = int(entry.get('quantity', entry.get('bestBuyQuantity', 0)))
                                 elif flag == 0:  # Sell side
                                     if ask_price == 0.0:
-                                        ask_price = float(entry.get('price', entry.get('bestSellPrice', 0)))
+                                        ask_price = float(entry.get('price', entry.get('bestSellPrice', 0))) / 100.0
                                         ask_qty = int(entry.get('quantity', entry.get('bestSellQuantity', 0)))
                 except (KeyError, TypeError, ValueError) as e:
                     logger.debug(f"Error parsing best_5_data for {symbol}: {e}")
@@ -392,9 +392,9 @@ class AngelOneProvider(MarketDataProvider):
                 ltp=ltp,
                 ltq=int(message.get('last_traded_quantity', 0)),
                 volume=int(message.get('volume_trade_for_the_day', 0)),
-                open_price=float(message.get('open_price_of_the_day', message.get('open_price', 0))),
-                high_price=float(message.get('high_price_of_the_day', message.get('high_price', 0))),
-                low_price=float(message.get('low_price_of_the_day', message.get('low_price', 0))),
+                open_price=float(message.get('open_price_of_the_day', message.get('open_price', 0))) / 100.0,
+                high_price=float(message.get('high_price_of_the_day', message.get('high_price', 0))) / 100.0,
+                low_price=float(message.get('low_price_of_the_day', message.get('low_price', 0))) / 100.0,
                 close_price=close,
                 bid_price=bid_price,
                 bid_quantity=bid_qty,

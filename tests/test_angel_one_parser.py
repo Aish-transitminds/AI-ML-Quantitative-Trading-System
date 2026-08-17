@@ -20,13 +20,13 @@ def test_angel_one_tick_parsing(provider):
     
     mock_payload = {
         "token": "3045",
-        "last_traded_price": 2500.50,
+        "last_traded_price": 250050,
         "last_traded_quantity": 100,
         "volume_trade_for_the_day": 500000,
         "exchange_feed_time": int(datetime.now().timestamp()),
         "best_5_data": [
-            {"flag": 1, "price": 2500.40, "quantity": 500},
-            {"flag": 0, "price": 2500.60, "quantity": 300}
+            {"flag": 1, "price": 250040, "quantity": 500},
+            {"flag": 0, "price": 250060, "quantity": 300}
         ]
     }
     
@@ -50,7 +50,7 @@ def test_ltp_parsing_paisa_normalization(provider):
     mock_payload = {
         "token": "3045",
         "last_traded_price": 250050,  # Paisa
-        "close_price": 2500.00,       # Rupee
+        "close_price": 250000,       # Paisa
         "last_traded_quantity": 100
     }
     provider._on_ws_data(None, mock_payload)
@@ -63,7 +63,7 @@ def test_ltq_parsing(provider):
     
     mock_payload = {
         "token": "3045",
-        "last_traded_price": 2500.00,
+        "last_traded_price": 250000,
         "last_traded_quantity": 42
     }
     provider._on_ws_data(None, mock_payload)
@@ -76,12 +76,12 @@ def test_market_depth_parsing(provider):
     
     mock_payload = {
         "token": "3045",
-        "last_traded_price": 2500.00,
+        "last_traded_price": 250000,
         "best_5_data": [
-            {"buySellFlag": 1, "price": 2499.0, "quantity": 10},
-            {"buySellFlag": 1, "price": 2498.0, "quantity": 20},
-            {"buySellFlag": 0, "price": 2501.0, "quantity": 15},
-            {"buySellFlag": 0, "price": 2502.0, "quantity": 25}
+            {"buySellFlag": 1, "price": 249900, "quantity": 10},
+            {"buySellFlag": 1, "price": 249800, "quantity": 20},
+            {"buySellFlag": 0, "price": 250100, "quantity": 15},
+            {"buySellFlag": 0, "price": 250200, "quantity": 25}
         ]
     }
     provider._on_ws_data(None, mock_payload)
@@ -97,7 +97,7 @@ def test_timestamp_parsing(provider):
     ts = 1691316000 # Specific UNIX epoch
     mock_payload = {
         "token": "3045",
-        "last_traded_price": 2500.00,
+        "last_traded_price": 250000,
         "exchange_feed_time": ts
     }
     provider._on_ws_data(None, mock_payload)
@@ -110,7 +110,7 @@ def test_token_mapping(provider):
     # Send unknown token
     mock_payload = {
         "token": "9999",
-        "last_traded_price": 100.00,
+        "last_traded_price": 10000,
     }
     provider._on_ws_data(None, mock_payload)
     assert ticks[0].symbol == "9999" # defaults to token if unknown
@@ -122,7 +122,7 @@ def test_missing_depth(provider):
     
     mock_payload = {
         "token": "3045",
-        "last_traded_price": 2500.00,
+        "last_traded_price": 250000,
         # No best_5_data
     }
     provider._on_ws_data(None, mock_payload)
@@ -137,7 +137,7 @@ def test_zero_ltq(provider):
     
     mock_payload = {
         "token": "3045",
-        "last_traded_price": 2500.00,
+        "last_traded_price": 250000,
         "last_traded_quantity": 0
     }
     provider._on_ws_data(None, mock_payload)

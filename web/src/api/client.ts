@@ -4,11 +4,22 @@
 import { API_BASE } from '../utils/constants';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const adminKey = localStorage.getItem('adminKey') || 'default-dev-key';
+  const headers = new Headers(options?.headers || {});
+  headers.set('Content-Type', 'application/json');
+  if (options?.method && options.method !== 'GET') {
+    headers.set('x-admin-key', adminKey);
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers,
   });
-  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { const data = await res.json(); if (data.detail) msg = data.detail; } catch (e) {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 
@@ -24,6 +35,7 @@ export const api = {
   getConfig:           ()              => request<any>('/api/config'),
   getSnapshot:         ()              => request<any>('/api/snapshot'),
   retrainModels:       ()              => request<any>('/api/models/retrain', { method: 'POST' }),
+  switchMode:          (mode: string)  => request<any>('/api/system/mode', { method: 'POST', body: JSON.stringify({ mode }) }),
 
   // B2C Consumer Endpoints
   executeTrade:        (payload: any)  => request<any>('/api/execute', { method: 'POST', body: JSON.stringify(payload) }),
