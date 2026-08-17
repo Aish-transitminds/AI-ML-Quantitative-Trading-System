@@ -34,7 +34,7 @@ FYERS_SECRET = os.getenv("FYERS_SECRET", "")
 FYERS_REDIRECT_URI = os.getenv("FYERS_REDIRECT_URI", "")
 
 # === Mode ===
-MODE = os.getenv("MODE", "OFFLINE")  # LIVE | OFFLINE
+MODE = os.getenv("MODE", "OFFLINE").strip().strip('"\'').upper()  # LIVE | OFFLINE
 
 # === Stock Screening Filters ===
 LTP_MIN = float(os.getenv("LTP_MIN", "30"))
