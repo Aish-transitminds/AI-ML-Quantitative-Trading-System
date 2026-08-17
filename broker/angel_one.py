@@ -122,10 +122,10 @@ class AngelOneProvider(MarketDataProvider):
             response.raise_for_status()
             all_instruments = response.json()
             
-            # Filter for NSE equities (exch_seg == 'nse_cm' and symbol ends with '-EQ')
+            # Filter for NSE equities (exch_seg == 'nse_cm' or 'NSE' and symbol ends with '-EQ')
             nse_equities = []
             for inst in all_instruments:
-                if (inst.get('exch_seg', '') == 'nse_cm' and 
+                if (inst.get('exch_seg', '') in ('nse_cm', 'NSE') and 
                     inst.get('symbol', '').endswith('-EQ')):
                     normalized = {
                         'token': inst.get('token', ''),
@@ -350,13 +350,12 @@ class AngelOneProvider(MarketDataProvider):
             else:
                 ts = datetime.now()
             
-            # Angel One prices may be in paisa (divide by 100) for some fields
-            # The SDK typically normalizes this, but handle both cases
-            ltp = float(message.get('last_traded_price', 0))
-            # If LTP seems unreasonably high (>100x close), it might be in paisa
-            close = float(message.get('close_price', 0))
-            if close > 0 and ltp > close * 100:
-                ltp /= 100
+            # Angel One sends all prices in paisa, so divide by 100
+            ltp = float(message.get('last_traded_price', 0)) / 100.0
+            close = float(message.get('close_price', 0)) / 100.0
+            open_price = float(message.get('open_price_of_the_day', message.get('open_price', 0))) / 100.0
+            high_price = float(message.get('high_price_of_the_day', message.get('high_price', 0))) / 100.0
+            low_price = float(message.get('low_price_of_the_day', message.get('low_price', 0))) / 100.0
             
             # Extract best bid/ask from best_5_data
             best_5 = message.get('best_5_data', [])
