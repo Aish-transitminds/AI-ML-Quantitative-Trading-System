@@ -290,6 +290,9 @@ class Application:
         # Try training model from demo data
         self._train_model()
 
+        # Walk-forward predict historical trades (chronological, out-of-sample)
+        self._walk_forward_predict_historical_trades()
+
         # Load demo bars and simulate screen results
         self._load_demo_screen_results(instruments)
 
@@ -523,6 +526,102 @@ class Application:
         except Exception as e:
             logger.error(f"Model training failed: {e}", exc_info=True)
 
+    def _walk_forward_predict_historical_trades(self) -> None:
+        """Expanding-window walk-forward validation for historical demo trades.
+        
+        Strict rules:
+        - Predict trade N using only trades < N.
+        - Must have at least MIN_TRADES_FOR_TRAINING (e.g. 50).
+        - Must have both classes (profitable=1 and profitable=0) in the training window.
+        - If criteria not met -> INSUFFICIENT_DATA
+        """
+        try:
+            trades = self.db.get_closed_trades()
+            if not trades:
+                return
+
+            # Sort chronologically by entry_timestamp
+            trades.sort(key=lambda t: t.entry_timestamp or datetime.min)
+            
+            logger.info(f"Running walk-forward prediction on {len(trades)} historical trades...")
+            
+            # Temporary trainer instance to avoid corrupting global model state
+            wf_trainer = ModelTrainer(self.db)
+            wf_predictor = Predictor(wf_trainer)
+            
+            for i, current_trade in enumerate(trades):
+                # We can only use trades strictly before 'i'
+                training_window = trades[:i]
+                
+                # Minimum size protection
+                if len(training_window) < settings.MIN_TRADES_FOR_TRAINING:
+                    current_trade.ml_probability = None
+                    current_trade.ml_decision = Decision.INSUFFICIENT_DATA.value
+                    self.db.update_trade(current_trade)
+                    continue
+                
+                # Build dataset for training window
+                X_rows = []
+                y_labels = []
+                feature_names = FeatureVector.feature_names()
+                
+                for past_trade in training_window:
+                    if past_trade.profitable is None or not past_trade.features_at_entry:
+                        continue
+                    row = [float(past_trade.features_at_entry.get(f, 0.0)) for f in feature_names]
+                    X_rows.append(row)
+                    y_labels.append(1 if past_trade.profitable else 0)
+                
+                # Single-class protection
+                if len(set(y_labels)) < 2:
+                    current_trade.ml_probability = None
+                    current_trade.ml_decision = Decision.INSUFFICIENT_DATA.value
+                    self.db.update_trade(current_trade)
+                    continue
+                
+                import numpy as np
+                X = np.nan_to_num(np.array(X_rows, dtype=np.float64))
+                y = np.array(y_labels, dtype=np.int32)
+                
+                # Chronological validation split within the history window (80% train, 20% val)
+                split_idx = int(len(X) * 0.8)
+                X_train, y_train = X[:split_idx], y[:split_idx]
+                X_val, y_val = X[split_idx:], y[split_idx:]
+                
+                if len(set(y_train)) < 2 or len(set(y_val)) < 2:
+                    current_trade.ml_probability = None
+                    current_trade.ml_decision = Decision.INSUFFICIENT_DATA.value
+                    self.db.update_trade(current_trade)
+                    continue
+
+                # Train model on expanding window
+                # Note: This is computationally expensive but necessary for strict ML integrity.
+                # Since offline dataset is small (~100 trades), this will only run ~50 times.
+                wf_trainer.train_all(
+                    X_train=X_train, y_train=y_train,
+                    X_val=X_val, y_val=y_val,
+                    X_test=X_val, y_test=y_val, # Dummy test set, unused for prediction
+                    feature_names=feature_names
+                )
+                
+                # Predict current out-of-sample trade
+                if wf_predictor.is_ready:
+                    prediction = wf_predictor.predict(current_trade.features_at_entry)
+                    current_trade.ml_probability = prediction.get('probability')
+                    dec = prediction.get('decision', Decision.INSUFFICIENT_DATA)
+                    current_trade.ml_decision = dec.value if isinstance(dec, Decision) else dec
+                else:
+                    current_trade.ml_probability = None
+                    current_trade.ml_decision = Decision.INSUFFICIENT_DATA.value
+                
+                self.db.update_trade(current_trade)
+            
+            logger.info("Walk-forward prediction complete.")
+            self._update_trades_list()
+
+        except Exception as e:
+            logger.error(f"Walk-forward prediction failed: {e}", exc_info=True)
+
     def _load_demo_trades(self) -> None:
         """Load pre-generated demo trades into the database for ML training."""
         try:
@@ -547,6 +646,8 @@ class Application:
                 else:
                     features_dict = features_json
 
+                # Genuine offline run: We initialize WITHOUT any hardcoded probabilities.
+                # The predictions will be populated via the _walk_forward_predict_historical_trades() routine later.
                 trade = Trade(
                     symbol=t.get('symbol', ''),
                     signal=SignalType(t.get('signal', 'BUY')),
@@ -555,7 +656,9 @@ class Application:
                     smma_fast_at_entry=t.get('smma20', 0),
                     smma_slow_at_entry=t.get('smma120', 0),
                     features_at_entry=features_dict,
-                    status=TradeStatus.OPEN
+                    status=TradeStatus.OPEN,
+                    ml_probability=None,
+                    ml_decision=None
                 )
 
                 trade.id = self.db.insert_trade(trade)
@@ -612,20 +715,50 @@ class Application:
             # Inject artificial BUY signals so the UI looks active and demonstrates the AI in offline mode
             if symbol in ('DEMO_TATAMOTORS-EQ', 'DEMO_SBIN-EQ', 'DEMO_BANKBARODA-EQ') or rng.random() > 0.8:
                 result.signal = 'BUY'
-                result.ml_probability = round(rng.uniform(0.70, 0.96), 2)
-                result.decision = 'STRONG_BUY'
                 
-                # Mock explanation for the dashboard
-                self.state.update_signal_explanation(symbol, {
-                    'reasons': [
-                        "Strong upward momentum crossing 120-period SMMA",
-                        "High institutional buying volume detected",
-                        "Feature analysis indicates 85% historical success rate"
-                    ],
-                    'risk_factors': ["Overall market volatility"],
-                    'probability': result.ml_probability,
-                    'decision': result.decision,
-                })
+                # Use actual model pipeline to predict a dummy feature vector, rather than hardcoding.
+                dummy_features = FeatureVector(
+                    smma20=result.smma_fast or 0,
+                    smma120=result.smma_slow or 0,
+                    smma_distance=result.smma_difference or 0,
+                    bid_quantity=result.bid_quantity,
+                    ask_quantity=result.ask_quantity,
+                    order_imbalance=0.1,  # slight simulated buy pressure
+                    ltq_ratio_2m_5m=1.1,
+                    spread_pct=0.001,
+                    return_5m=0.003
+                ).to_dict()
+                
+                if self.predictor and self.predictor.is_ready:
+                    pred = self.predictor.predict(dummy_features)
+                    result.ml_probability = pred.get('probability')
+                    dec = pred.get('decision', Decision.INSUFFICIENT_DATA)
+                    result.decision = dec.value if isinstance(dec, Decision) else dec
+                    
+                    reasons, risks = explain_signal(
+                        SignalType.BUY, 
+                        dummy_features, 
+                        result.ml_probability or 0.0, 
+                        pred.get('threshold_used', settings.ML_THRESHOLD)
+                    )
+                    
+                    # Ensure explicitly labelled as synthetic simulation
+                    reasons.insert(0, "[OFFLINE DEMO - SYNTHETIC DATA] Simulated prediction using live model pipeline")
+                    
+                    self.state.update_signal_explanation(symbol, {
+                        'reasons': reasons,
+                        'risk_factors': risks,
+                        'probability': result.ml_probability,
+                        'decision': result.decision,
+                    })
+                else:
+                    result.decision = Decision.INSUFFICIENT_DATA.value
+                    self.state.update_signal_explanation(symbol, {
+                        'reasons': ["[OFFLINE DEMO - SYNTHETIC DATA] Insufficient data to generate simulated prediction"],
+                        'risk_factors': [],
+                        'probability': None,
+                        'decision': result.decision,
+                    })
 
             self.data_manager._screen_results[symbol] = result
             

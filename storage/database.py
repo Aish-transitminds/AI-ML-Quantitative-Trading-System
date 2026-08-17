@@ -173,7 +173,9 @@ class DatabaseManager:
             exit_price = ?,
             pnl = ?,
             profitable = ?,
-            status = ?
+            status = ?,
+            ml_probability = ?,
+            ml_decision = ?
         WHERE id = ?
         '''
         with self._lock:
@@ -186,6 +188,8 @@ class DatabaseManager:
                         trade.pnl,
                         1 if trade.profitable else 0 if trade.profitable is False else None,
                         trade.status.value if hasattr(trade.status, 'value') else trade.status,
+                        trade.ml_probability,
+                        trade.ml_decision,
                         trade.id
                     ))
                     conn.commit()

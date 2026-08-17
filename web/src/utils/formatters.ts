@@ -9,13 +9,13 @@ export function formatPrice(value: number | null | undefined): string {
 }
 
 /** Format large numbers with K/M/B suffixes */
-export function formatCompact(value: number | null | undefined): string {
-  if (value == null) return '—';
-  if (Math.abs(value) >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-  if (Math.abs(value) >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-  if (Math.abs(value) >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+export const formatCompact = (value: number) => {
+  if (value === undefined || value === null) return '-';
+  if (Math.abs(value) >= 1e7) return `${(value / 1e7).toFixed(2)}Cr`;
+  if (Math.abs(value) >= 1e5) return `${(value / 1e5).toFixed(2)}L`;
+  if (Math.abs(value) >= 1e3) return `${(value / 1e3).toFixed(1)}k`;
   return value.toLocaleString('en-IN');
-}
+};
 
 /** Format percentage (0.65 → "65.0%") */
 export function formatPercent(value: number | null | undefined, decimals = 1): string {
