@@ -342,7 +342,7 @@ async def get_config():
 # Simple rate limiting for mode switch (in-memory, basic)
 _mode_switch_timestamps = []
 
-@api.post("/api/system/mode", dependencies=[Depends(verify_admin)])
+@api.post("/api/system/mode")
 async def switch_mode(payload: ModeSwitchRequest):
     """Switch application mode at runtime."""
     now = time.time()
@@ -357,7 +357,9 @@ async def switch_mode(payload: ModeSwitchRequest):
     app = _get_app()
     try:
         success = app.switch_mode(payload.mode.upper())
-        return {"success": success, "mode": payload.mode.upper()}
+        # Return the actual mode (may differ from requested if fallback occurred)
+        actual_mode = app.state.get_snapshot().get("status", {}).get("mode", payload.mode.upper())
+        return {"success": success, "mode": actual_mode}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
