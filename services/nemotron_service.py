@@ -86,13 +86,23 @@ class NemotronService:
             if not result_text:
                 raise ValueError("Empty response from Nemotron")
             
-            # Extract JSON from potential reasoning output
+            # Remove any <think>...</think> tags which might contain curly braces
             import re
-            json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+            text_without_think = re.sub(r'<think>.*?</think>', '', result_text, flags=re.DOTALL)
+            
+            # Extract JSON from potential reasoning output
+            json_match = re.search(r'\{.*\}', text_without_think, re.DOTALL)
             if json_match:
-                result_text = json_match.group(0)
-                
-            return json.loads(result_text)
+                parsed = json.loads(json_match.group(0))
+                # Ensure it has the expected lowercase keys for the frontend
+                return {
+                    "summary": parsed.get("summary") or parsed.get("Summary") or "Summary not provided.",
+                    "supporting_factors": parsed.get("supporting_factors") or parsed.get("Supporting_Factors") or parsed.get("Supporting Factors") or [],
+                    "risk_factors": parsed.get("risk_factors") or parsed.get("Risk_Factors") or parsed.get("Risk Factors") or [],
+                    "reasoning": parsed.get("reasoning") or parsed.get("Reasoning") or "Reasoning not provided."
+                }
+            else:
+                raise ValueError("No JSON block found in response")
 
         except json.JSONDecodeError as e:
             logger.error(f"Nemotron returned invalid JSON: {e}\nResponse: {result_text}")

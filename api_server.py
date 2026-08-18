@@ -353,6 +353,13 @@ async def analyze_signal_with_ai(payload: AIAnalyzeRequest):
         raise HTTPException(status_code=404, detail=f"No market data found for {payload.symbol}")
 
     # Build context from authoritative backend state
+    bars = state.get("bars", {}).get(payload.symbol, [])
+    recent_bars = bars[-10:] if bars else []
+    recent_price_action = [
+        {"time": b["timestamp"], "open": b["open"], "close": b["close"], "high": b["high"], "low": b["low"]}
+        for b in recent_bars
+    ]
+
     context = {
         "symbol": result.symbol,
         "ltp": result.ltp,
@@ -364,7 +371,8 @@ async def analyze_signal_with_ai(payload: AIAnalyzeRequest):
         "liquidity": {
             "bid_qty": result.bid_quantity,
             "ask_qty": result.ask_quantity
-        }
+        },
+        "recent_price_action": recent_price_action
     }
     
     explanation = nemotron_service.analyze_signal(payload.symbol, context)
