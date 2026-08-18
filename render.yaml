@@ -15,3 +15,5 @@ services:
       # - TOTP_SECRET
       - key: PORT
         value: 8000
+      - key: NVIDIA_API_KEY
+        sync: false
