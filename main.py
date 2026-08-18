@@ -180,7 +180,13 @@ class Application:
             if actual_mode == "OFFLINE":
                 self._start_offline()
             else:
-                self._start_live()
+                try:
+                    self._start_live()
+                except Exception as e:
+                    logger.error(f"LIVE mode failed: {e}. Falling back to OFFLINE...")
+                    actual_mode = "OFFLINE"
+                    settings.MODE = "OFFLINE"
+                    self._start_offline()
 
             self._running = True
             self.state.update_status({
@@ -188,7 +194,7 @@ class Application:
                 "broker": settings.BROKER,
                 "running": True
             })
-            logger.info("Application started successfully")
+            logger.info(f"Application started successfully in {actual_mode} mode")
 
         except Exception as e:
             logger.error(f"Application startup failed: {e}", exc_info=True)
@@ -240,18 +246,32 @@ class Application:
             
             settings.MODE = new_mode
             
-            # Restart
-            if new_mode == "OFFLINE":
-                self._start_offline()
-            else:
-                self._start_live()
+            # Restart — with automatic OFFLINE fallback if LIVE fails
+            actual_mode = new_mode
+            try:
+                if new_mode == "OFFLINE":
+                    self._start_offline()
+                else:
+                    self._start_live()
+            except Exception as e:
+                if new_mode == "LIVE":
+                    logger.error(f"Failed to start LIVE mode: {e}. Falling back to OFFLINE...")
+                    settings.MODE = "OFFLINE"
+                    actual_mode = "OFFLINE"
+                    try:
+                        self._start_offline()
+                    except Exception as e2:
+                        logger.error(f"OFFLINE fallback also failed: {e2}")
+                        raise
+                else:
+                    raise
 
             self._running = True
             
             # NOTE: _start_live already starts the status update loop.
             # _start_offline does not use the status update loop for tick generation,
             # but we can start it if we want continuous UI updates, or rely on demo generator.
-            if new_mode == "OFFLINE" and not any(t.name == "StatusUpdater" and t.is_alive() for t in threading.enumerate()):
+            if actual_mode == "OFFLINE" and not any(t.name == "StatusUpdater" and t.is_alive() for t in threading.enumerate()):
                 threading.Thread(
                     target=self._status_update_loop,
                     name="StatusUpdater",
@@ -259,12 +279,12 @@ class Application:
                 ).start()
 
             self.state.update_status({
-                "mode": new_mode,
+                "mode": actual_mode,
                 "broker": settings.BROKER,
                 "running": True
             })
             
-            logger.info(f"Successfully switched to {new_mode} mode")
+            logger.info(f"Successfully switched to {actual_mode} mode")
             return True
 
     def _start_offline(self) -> None:

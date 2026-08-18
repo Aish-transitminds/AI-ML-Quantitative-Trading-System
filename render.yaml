@@ -6,6 +6,6 @@ services:
     healthCheckPath: /
     envVars:
       - key: MODE
-        value: OFFLINE # Or LIVE if you configure broker credentials
+        value: OFFLINE
       - key: PORT
         value: 8000

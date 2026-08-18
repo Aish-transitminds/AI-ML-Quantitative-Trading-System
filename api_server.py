@@ -52,8 +52,24 @@ def _get_app() -> Application:
         try:
             _app_instance.start()
         except Exception as e:
-            print(f"Application start failed: {e}")
-            raise
+            print(f"Application start failed in {settings.MODE} mode: {e}")
+            if settings.MODE != "OFFLINE":
+                print("Falling back to OFFLINE mode...")
+                # Reset the global singleton in main.py so we get a fresh instance
+                import main as _main_module
+                with _main_module._app_lock:
+                    _main_module._app_instance = None
+                _app_instance = None
+                settings.MODE = "OFFLINE"
+                _app_instance = get_application()
+                try:
+                    _app_instance.start(mode="OFFLINE")
+                    print("Successfully started in OFFLINE fallback mode")
+                except Exception as e2:
+                    print(f"OFFLINE fallback also failed: {e2}")
+                    raise
+            else:
+                raise
     return _app_instance
 
 
@@ -83,7 +99,7 @@ api = FastAPI(
 
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:8501", "http://localhost:8000", "http://127.0.0.1:5173", "http://127.0.0.1:8000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
