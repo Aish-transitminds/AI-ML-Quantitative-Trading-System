@@ -232,7 +232,7 @@ async def get_stock_detail(symbol: str):
     data = _serialize_screen_result(result)
 
     # Add signal explanation if available
-    explanation = state.get("signal_explanations", {}).get(symbol, {})
+    explanation = state.get("signal_explanations", {}).get(symbol)
     data["explanation"] = explanation
 
     # Add bars for charting
