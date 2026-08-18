@@ -6,6 +6,12 @@ services:
     healthCheckPath: /
     envVars:
       - key: MODE
-        value: OFFLINE
+        value: LIVE
+      # NOTE: For LIVE mode to work on Render, you MUST add the following
+      # Environment Variables manually in your Render Dashboard:
+      # - API_KEY
+      # - CLIENT_ID
+      # - PASSWORD
+      # - TOTP_SECRET
       - key: PORT
         value: 8000

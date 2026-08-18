@@ -34,7 +34,8 @@ FYERS_SECRET = os.getenv("FYERS_SECRET", "")
 FYERS_REDIRECT_URI = os.getenv("FYERS_REDIRECT_URI", "")
 
 # === Mode ===
-MODE = os.getenv("MODE", "OFFLINE").split("#")[0].strip().strip('"\'').upper()  # LIVE | OFFLINE
+# LIVE broker integration exists for future development but is currently disabled.
+MODE = "OFFLINE"
 
 # === Stock Screening Filters ===
 LTP_MIN = float(os.getenv("LTP_MIN", "30"))

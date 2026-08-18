@@ -8,20 +8,20 @@ A production-quality full-stack application that scans NSE-listed stocks in real
 This system is designed as an institutional-grade stock screener and AI/ML predictor. It connects to live broker APIs to ingest tick data, computes complex order-book and quantitative features (like ETQ and LTQ), detects SMMA state transitions, and evaluates whether a given crossover signal should be ACCEPTED or AVOIDED based on historical ML analysis.
 
 ## Features
-- **Real-time NSE Stock Scanning**: Built on Angel One SmartAPI and FYERS for live market data.
+- **Offline Demo Mode**: Fully simulates live market conditions, ticks, and chart bars for evaluation purposes. **Currently operates strictly in OFFLINE DEMO — SYNTHETIC DATA mode.**
+- **AI Market Analyst**: Integrated NVIDIA Nemotron-3-Nano-30B-A3B to explain and analyze generated ML signals in plain English without hallucinating quantitative logic.
 - **Quantitative Filters**: LTP filter (₹30-₹500) and liquidity filter (Bid/Ask Qty > 1M).
 - **Advanced Technicals**: SMMA(20) / SMMA(120) moving average crossover detection.
 - **Machine Learning Predictor**: Logistic Regression, Random Forest, XGBoost trained to predict crossover profitability.
 - **Extensive Feature Engineering**: 25+ features including ETQ (Estimated Traded Quantity), LTQ, Order Imbalance, and SMMA distances.
 - **State-of-the-art Web Dashboard**: Built with React, TypeScript, and Lightweight Charts for a professional, responsive UI.
-- **Asynchronous Python Backend**: FastAPI-powered backend handling WebSockets, data persistence (SQLite/Parquet), and ML pipelines in real-time.
-- **Offline Demo Mode**: Fully simulates live market conditions, ticks, and chart bars for evaluation purposes without needing active broker credentials.
+- **Asynchronous Python Backend**: FastAPI-powered backend handling WebSockets, data persistence (SQLite/Parquet), and ML pipelines.
 
 ## Documentation
 For detailed insights into the specific sub-systems of QuantumGrow, refer to the following documents:
-- [Runtime Mode Architecture](docs/RUNTIME_MODE_ARCHITECTURE.md) - Details on LIVE/OFFLINE state isolation and runtime mode switching.
+- [Runtime Mode Architecture](docs/RUNTIME_MODE_ARCHITECTURE.md) - Details on OFFLINE simulation environment.
 - [Security Posture](docs/SECURITY.md) - Information on credential protection, rate-limiting, and network boundaries.
-- [Broker Setup](docs/BROKER_SETUP.md) - Angel One SmartAPI connection and normalization specifics.
+- [Broker Setup](docs/BROKER_SETUP.md) - Documentation of isolated Angel One integration.
 - [Data Pipeline](docs/DATA_PIPELINE.md) - The multi-stage event-driven tick parsing and persistence architecture.
 
 ## Architecture (Data Flow & ML Pipeline)

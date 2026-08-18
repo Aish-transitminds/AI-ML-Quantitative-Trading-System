@@ -25,8 +25,8 @@ This document provides a rigorous, code-verified audit of the QuantumGrow AI/ML 
 | **18. Additional features** | Spread, imbalance, SMMA distance, returns | `features/orderbook_features.py` | PASS | None |
 | **19. Probability/Confidence** | model.predict_proba() mapped to probability | `ml/predict.py` | PASS | None |
 | **20. Accept/Reject signals** | Threshold applied to probability | `ml/predict.py` | PASS | None |
-| **21. Explain decision** | Feature-based Explainable AI (rule-based) | `ml/explain.py` | PASS | Add SHAP values for advanced explanations if possible. |
-| **22. Live Dashboard** | React + Vite + Lightweight Charts | `web/src/` | PASS | Ensure connection status is strictly obvious. |
+| **21. Explain decision** | Integrated NVIDIA Nemotron-3-Nano AI Analyst | `services/nemotron_service.py` | PASS | Handled gracefully if API key is missing. |
+| **22. Dashboard UI** | React + Vite + Lightweight Charts | `web/src/` | PASS | UI is clear about OFFLINE DEMO status. |
 | **23. Source code** | Fully typed Python 3.10 codebase | `main.py` | PASS | None |
 | **24. Windows Executable** | PyInstaller spec + build script exists | `build_exe.py` | NOT VERIFIED | Must test packaging locally and verify bundled UI works. |
 | **25. Screen-recording** | Application UI is stable | `web/src/` | PASS | Create docs/DEMO_SCRIPT.md to guide the video. |

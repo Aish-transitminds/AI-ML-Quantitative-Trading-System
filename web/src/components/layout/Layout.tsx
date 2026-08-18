@@ -5,41 +5,12 @@ import { Search, X } from 'lucide-react';
 import { formatPrice } from '../../utils/formatters';
 
 export default function Layout() {
-  const { status, wsConnected, searchStocks, searchResults, isProMode, toggleProMode } = useStore();
+  const { wsConnected, searchStocks, searchResults, isProMode, toggleProMode } = useStore();
   const [query, setQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [isSwitchingMode, setIsSwitchingMode] = useState(false);
-  const [modeSwitchFeedback, setModeSwitchFeedback] = useState('');
-
-  const handleModeSwitch = async () => {
-    if (!status?.mode || isSwitchingMode) return;
-    const nextMode = status.mode === 'LIVE' ? 'OFFLINE' : 'LIVE';
-    if (!window.confirm(`Switch to ${nextMode === 'LIVE' ? '🟢 LIVE (Real Market Data)' : '🟠 DEMO (Simulated Data)'}?`)) return;
-    
-    setIsSwitchingMode(true);
-    setModeSwitchFeedback('');
-    try {
-      const { api } = await import('../../api/client');
-      await api.switchMode(nextMode);
-      // Refresh all data after mode switch
-      const { useStore } = await import('../../stores/useStore');
-      await useStore.getState().fetchInitialData();
-      setModeSwitchFeedback(`Switched to ${nextMode === 'LIVE' ? 'LIVE' : 'DEMO'} mode`);
-      setTimeout(() => setModeSwitchFeedback(''), 3000);
-    } catch (e: any) {
-      setModeSwitchFeedback(`Switch failed — running in DEMO mode`);
-      // Refresh data anyway since backend auto-falls back to OFFLINE
-      const { useStore } = await import('../../stores/useStore');
-      await useStore.getState().fetchInitialData();
-      setTimeout(() => setModeSwitchFeedback(''), 4000);
-    } finally {
-      setIsSwitchingMode(false);
-    }
-  };
-
   // Handle window resize
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -98,74 +69,37 @@ export default function Layout() {
           <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>Q</div>
           {!isMobile && <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>QuantumGrow</span>}
           
-          {/* Live / Offline Mode Toggle — Prominent & Always Visible */}
+          {/* Offline Mode Badge — Static */}
           <div 
-            onClick={handleModeSwitch}
             style={{ 
-              cursor: isSwitchingMode ? 'wait' : 'pointer', 
-              opacity: isSwitchingMode ? 0.7 : 1, 
-              transition: 'all 0.3s',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               marginLeft: isMobile ? '4px' : '8px',
               padding: '4px 10px',
               borderRadius: '20px',
-              background: status?.mode === 'LIVE' 
-                ? 'rgba(0, 200, 83, 0.12)' 
-                : 'rgba(255, 152, 0, 0.12)',
-              border: `1px solid ${status?.mode === 'LIVE' ? 'rgba(0, 200, 83, 0.3)' : 'rgba(255, 152, 0, 0.3)'}`,
+              background: 'rgba(255, 152, 0, 0.12)',
+              border: '1px solid rgba(255, 152, 0, 0.3)',
             }}
-            title={`Currently in ${status?.mode === 'LIVE' ? 'LIVE' : 'DEMO'} mode — Click to switch`}
+            title="Application is running in OFFLINE DEMO mode with synthetic data."
           >
-            {/* Pulsing dot for LIVE, static dot for DEMO */}
             <div style={{
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: status?.mode === 'LIVE' ? '#00C853' : '#FF9800',
-              boxShadow: status?.mode === 'LIVE' ? '0 0 6px rgba(0, 200, 83, 0.6)' : 'none',
-              animation: status?.mode === 'LIVE' ? 'pulse-live 2s ease-in-out infinite' : 'none',
+              background: '#FF9800',
               flexShrink: 0,
             }} />
             <span style={{ 
               fontSize: '11px', 
               fontWeight: 700, 
-              color: status?.mode === 'LIVE' ? '#00C853' : '#FF9800',
+              color: '#FF9800',
               letterSpacing: '0.5px',
             }}>
-              {isSwitchingMode ? 'SWITCHING...' : (status?.mode === 'LIVE' ? 'LIVE' : 'DEMO')}
+              OFFLINE DEMO
             </span>
-            {/* Small switch icon */}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={status?.mode === 'LIVE' ? '#00C853' : '#FF9800'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
-              <polyline points="17 1 21 5 17 9"></polyline>
-              <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-              <polyline points="7 23 3 19 7 15"></polyline>
-              <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-            </svg>
           </div>
         </div>
-
-        {/* Mode Switch Feedback Toast */}
-        {modeSwitchFeedback && (
-          <div style={{
-            position: 'fixed',
-            top: '70px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            padding: '8px 20px',
-            borderRadius: '8px',
-            background: modeSwitchFeedback.includes('failed') ? 'var(--loss)' : 'var(--gain)',
-            color: 'white',
-            fontSize: '12px',
-            fontWeight: 600,
-            zIndex: 9999,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            animation: 'fadeIn 0.3s ease',
-          }}>
-            {modeSwitchFeedback}
-          </div>
-        )}
 
         {/* Global Search - Hide on very small mobile */}
         {!isMobile && (

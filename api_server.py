@@ -37,6 +37,9 @@ from pathlib import Path
 
 from main import get_application, Application
 from config import settings
+from services.nemotron_service import NemotronService
+
+nemotron_service = NemotronService()
 
 
 # ─── Application lifecycle ─────────────────────────────────────────────────
@@ -118,10 +121,6 @@ async def verify_admin(x_admin_key: str = Header(None)):
     expected = os.environ.get("ADMIN_API_KEY", "default-dev-key")
     if not x_admin_key or x_admin_key != expected:
         raise HTTPException(status_code=401, detail="Unauthorized")
-
-class ModeSwitchRequest(BaseModel):
-    mode: str
-
 
 # ─── Helper: serialize dataclass/objects ────────────────────────────────────
 
@@ -338,32 +337,42 @@ async def get_config():
         },
     }
 
+class AIAnalyzeRequest(BaseModel):
+    symbol: str
 
-# Simple rate limiting for mode switch (in-memory, basic)
-_mode_switch_timestamps = []
-
-@api.post("/api/system/mode")
-async def switch_mode(payload: ModeSwitchRequest):
-    """Switch application mode at runtime."""
-    now = time.time()
-    global _mode_switch_timestamps
-    # Clean old timestamps (> 60s)
-    _mode_switch_timestamps = [ts for ts in _mode_switch_timestamps if now - ts < 60]
-    if len(_mode_switch_timestamps) > 5:
-        raise HTTPException(status_code=429, detail="Too many mode switch requests. Try again later.")
-    
-    _mode_switch_timestamps.append(now)
-
+@api.post("/api/ai/analyze")
+async def analyze_signal_with_ai(payload: AIAnalyzeRequest):
+    """Trigger AI Analyst to explain ML signal for a symbol."""
     app = _get_app()
-    try:
-        success = app.switch_mode(payload.mode.upper())
-        # Return the actual mode (may differ from requested if fallback occurred)
-        actual_mode = app.state.get_snapshot().get("status", {}).get("mode", payload.mode.upper())
-        return {"success": success, "mode": actual_mode}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    state = app.state.get_snapshot()
+    
+    screen_results = state.get("screen_results", {})
+    result = screen_results.get(payload.symbol)
+    
+    if not result:
+        raise HTTPException(status_code=404, detail=f"No market data found for {payload.symbol}")
+
+    # Build context from authoritative backend state
+    context = {
+        "symbol": result.symbol,
+        "ltp": result.ltp,
+        "smma_fast": result.smma_fast,
+        "smma_slow": result.smma_slow,
+        "signal": result.signal,
+        "ml_probability": result.ml_probability,
+        "decision": result.decision,
+        "liquidity": {
+            "bid_qty": result.bid_quantity,
+            "ask_qty": result.ask_quantity
+        }
+    }
+    
+    explanation = nemotron_service.analyze_signal(payload.symbol, context)
+    
+    # Store it in app state so it persists for the dashboard
+    app.state.update_signal_explanation(payload.symbol, explanation)
+    
+    return {"success": True, "explanation": explanation}
 
 
 @api.post("/api/models/retrain", dependencies=[Depends(verify_admin)])

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useStore } from '../stores/useStore';
 
 export default function Settings() {
-  const { config, fetchConfig, status } = useStore();
+  const { config, fetchConfig } = useStore();
 
   useEffect(() => { fetchConfig(); }, []);
 
@@ -11,7 +11,7 @@ export default function Settings() {
   const smma = config?.smma || {};
   const ml = config?.ml || {};
   const data = config?.data || {};
-  const mode = config?.mode || status?.mode || 'OFFLINE';
+
 
   return (
     <div>
@@ -30,14 +30,12 @@ export default function Settings() {
         style={{ marginBottom: 24 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className={`status-pulse ${mode === 'LIVE' ? 'live' : 'offline'}`} style={{ fontSize: 13 }}>
+          <div className="status-pulse offline" style={{ fontSize: 13 }}>
             <span className="pulse-dot" />
-            <span>{mode}</span>
+            <span>OFFLINE DEMO</span>
           </div>
           <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            {mode === 'OFFLINE'
-              ? 'Using simulated demo data for demonstration'
-              : 'Connected to live market via broker API'}
+            Using synthetic demo data for demonstration. LIVE integration is currently disabled.
           </span>
         </div>
       </motion.div>

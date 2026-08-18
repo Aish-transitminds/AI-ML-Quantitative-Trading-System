@@ -11,7 +11,7 @@ The models were trained on a chronologically separated segment of crossover even
 | **Random Forest** | 0.74 | 0.76 | 0.72 | 0.78 |
 | **XGBoost (Best)** | **0.78** | **0.81** | **0.75** | **0.83** |
 
-*Note: The system automatically promotes XGBoost to production for live inference if its threshold passes.*
+*Note: The system automatically promotes XGBoost to production for real-time simulation if its threshold passes.*
 
 ## Simulated Trade Statistics (Offline Mode)
 Evaluating the system with `ML_THRESHOLD = 0.65` produced the following baseline statistics:

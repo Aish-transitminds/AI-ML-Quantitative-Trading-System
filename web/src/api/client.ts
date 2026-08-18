@@ -35,7 +35,7 @@ export const api = {
   getConfig:           ()              => request<any>('/api/config'),
   getSnapshot:         ()              => request<any>('/api/snapshot'),
   retrainModels:       ()              => request<any>('/api/models/retrain', { method: 'POST' }),
-  switchMode:          (mode: string)  => request<any>('/api/system/mode', { method: 'POST', body: JSON.stringify({ mode }) }),
+  analyzeSignal:       (symbol: string) => request<any>('/api/ai/analyze', { method: 'POST', body: JSON.stringify({ symbol }) }),
 
   // B2C Consumer Endpoints
   executeTrade:        (payload: any)  => request<any>('/api/execute', { method: 'POST', body: JSON.stringify(payload) }),

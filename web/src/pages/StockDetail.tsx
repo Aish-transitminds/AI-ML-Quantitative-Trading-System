@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../stores/useStore';
 import { api } from '../api/client';
 import { formatPrice, formatCompact } from '../utils/formatters';
-import { ArrowLeft, Star, TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { ArrowLeft, Star, Info } from 'lucide-react';
 import LightweightChart from '../components/charts/LightweightChart';
 
 export default function StockDetail() {
@@ -12,6 +12,7 @@ export default function StockDetail() {
   const { watchlist, addToWatchlist, removeFromWatchlist } = useStore();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
     if (!symbol) return;
@@ -55,6 +56,21 @@ export default function StockDetail() {
       console.error(err);
     }
   };
+
+  const handleAnalyze = async () => {
+    if (!symbol) return;
+    setAnalyzing(true);
+    try {
+      const res = await api.analyzeSignal(symbol);
+      setData((prev: any) => ({ ...prev, explanation: res.explanation }));
+    } catch (err) {
+      alert('Failed to run AI analysis.');
+      console.error(err);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
 
   const isBuy = data.signal === 'BUY';
   const confidence = data.ml_probability ? (data.ml_probability * 100).toFixed(0) : '--';
@@ -154,18 +170,43 @@ export default function StockDetail() {
               </div>
             </div>
 
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ fontSize: isMobile ? 'clamp(12px, 2vw, 15px)' : '15px', fontWeight: 600, marginBottom: '12px' }}>Why did the AI choose this?</h3>
-              <ul style={{ paddingLeft: '20px', margin: 0, color: 'var(--text-secondary)', fontSize: 'clamp(12px, 2vw, 14px)', lineHeight: '1.6' }}>
-                <li style={{ marginBottom: '8px' }}>
-                  {isBuy ? <TrendingUp size={14} color="var(--profit)" style={{ marginRight: '8px', verticalAlign: 'middle' }} /> : <TrendingDown size={14} color="var(--loss)" style={{ marginRight: '8px', verticalAlign: 'middle' }} />}
-                  The 20-period moving average has crossed {isBuy ? 'above' : 'below'} the 120-period average.
-                </li>
-                <li>
-                  Order flow imbalance shows {data.bid_quantity > data.ask_quantity ? 'strong buying pressure' : 'strong selling pressure'}.
-                </li>
-              </ul>
-            </div>
+            {data.explanation ? (
+              <div style={{ marginBottom: '24px', background: 'rgba(0, 102, 255, 0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0, 102, 255, 0.1)' }}>
+                <h3 style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 600, marginBottom: '8px', color: '#0066FF' }}>NVIDIA Nemotron Analysis</h3>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>{data.explanation.summary}</p>
+                
+                {data.explanation.supporting_factors && data.explanation.supporting_factors.length > 0 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>Supporting Factors</div>
+                    <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--profit)' }}>
+                      {data.explanation.supporting_factors.map((f: string, i: number) => <li key={i}>{f}</li>)}
+                    </ul>
+                  </div>
+                )}
+                
+                {data.explanation.risk_factors && data.explanation.risk_factors.length > 0 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>Risk Factors</div>
+                    <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--loss)' }}>
+                      {data.explanation.risk_factors.map((f: string, i: number) => <li key={i}>{f}</li>)}
+                    </ul>
+                  </div>
+                )}
+                
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>Reasoning</div>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.5 }}>{data.explanation.reasoning}</p>
+              </div>
+            ) : (
+              <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+                <button 
+                  onClick={handleAnalyze}
+                  disabled={analyzing}
+                  style={{ padding: '10px 20px', background: '#0066FF', color: 'white', border: 'none', borderRadius: '8px', cursor: analyzing ? 'wait' : 'pointer', fontWeight: 600, width: '100%', opacity: analyzing ? 0.7 : 1 }}
+                >
+                  {analyzing ? 'Analyzing with Nemotron AI...' : 'Ask AI Analyst for Explanation'}
+                </button>
+              </div>
+            )}
 
             {openTrade ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
