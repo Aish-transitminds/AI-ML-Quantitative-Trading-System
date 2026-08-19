@@ -128,8 +128,8 @@ class NemotronService:
             fallback_response["reasoning"] = f"AI request failed: {str(e)}. Response: {error_body}"
             return fallback_response
         except json.JSONDecodeError as e:
-            logger.error(f"AI returned invalid JSON: {e}")
-            fallback_response["reasoning"] = "Received invalid response format from AI Analyst."
+            logger.error(f"AI returned invalid JSON: {e}. Raw response: {result_text}")
+            fallback_response["reasoning"] = f"Received invalid response format from AI Analyst: {str(e)}. Raw response: {result_text[:400]}"
             return fallback_response
         except Exception as e:
             logger.error(f"AI analysis failed: {e}")
