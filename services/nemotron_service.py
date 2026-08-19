@@ -75,7 +75,6 @@ class NemotronService:
 '  "risk_factors": ["array of concise risks or opposing indicators"],\n'
 '  "reasoning": "2-3 paragraphs explaining the market context and why the ML model likely made this decision."\n'
 "}"
-            "}"
         )
 
         user_prompt = f"Analyze this ML Signal for {symbol}:\n{json.dumps(context, indent=2)}"
