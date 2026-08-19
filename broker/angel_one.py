@@ -53,6 +53,11 @@ class AngelOneProvider(MarketDataProvider):
         self._subscribed_tokens: Dict[int, set] = {1: set(), 2: set(), 3: set()}
         self._instruments_cache: List[Dict[str, Any]] = []
         self._token_to_symbol: Dict[str, str] = {}  # token -> symbol mapping
+        
+        # Auto-refresh state
+        self._last_auth_date: Optional[datetime.date] = None
+        self._auto_refresh_thread: Optional[threading.Thread] = None
+        self._auto_refresh_running: bool = False
     
     def connect(self) -> bool:
         """Authenticate with Angel One SmartAPI."""
@@ -78,12 +83,22 @@ class AngelOneProvider(MarketDataProvider):
             )
             
             if data.get('status', False) is False:
-                logger.error(f"Login failed: {data.get('message', 'Unknown error')}")
+                msg = data.get('message', 'Unknown error')
+                logger.error(f"Login failed: {msg}")
+                if "totp" in msg.lower() or "invalid" in msg.lower():
+                    logger.error("HINT: Ensure your TOTP_SECRET comes from the SmartAPI 'enable-totp' QR flow, NOT your Angel One login password.")
                 return False
             
             self._auth_token = data['data']['jwtToken']
             self._feed_token = self._smart_api.getfeedToken()
             self._connected = True
+            self._last_auth_date = datetime.now().date()
+            
+            # Start the daily auto-refresh thread if not running
+            if not self._auto_refresh_running:
+                self._auto_refresh_running = True
+                self._auto_refresh_thread = threading.Thread(target=self._daily_refresh_loop, daemon=True)
+                self._auto_refresh_thread.start()
             
             logger.info(f"Angel One login successful for client: {settings.CLIENT_ID[:4]}****")
             return True
@@ -95,6 +110,7 @@ class AngelOneProvider(MarketDataProvider):
     
     def disconnect(self) -> None:
         """Disconnect from Angel One."""
+        self._auto_refresh_running = False
         try:
             self.stop_websocket()
             if self._smart_api:
@@ -106,6 +122,52 @@ class AngelOneProvider(MarketDataProvider):
             logger.info("Angel One disconnected")
         except Exception as e:
             logger.error(f"Error during disconnect: {e}")
+
+    def _daily_refresh_loop(self) -> None:
+        """Background thread that re-authenticates every day at midnight.
+        
+        The SmartAPI session silently expires at midnight. This thread
+        detects the date change, gets a fresh session (auth token + feed token),
+        and seamlessly restarts the WebSocket stream.
+        """
+        while self._auto_refresh_running:
+            try:
+                now_date = datetime.now().date()
+                if self._last_auth_date and now_date > self._last_auth_date:
+                    logger.info("New day detected. Automatically refreshing Angel One session to prevent silent expiry...")
+                    # Generate new TOTP and Session
+                    totp = pyotp.TOTP(settings.TOTP_SECRET).now()
+                    data = self._smart_api.generateSession(
+                        clientCode=settings.CLIENT_ID,
+                        password=settings.PASSWORD,
+                        totp=totp
+                    )
+                    
+                    if data.get('status', False):
+                        self._auth_token = data['data']['jwtToken']
+                        self._feed_token = self._smart_api.getfeedToken()
+                        self._last_auth_date = now_date
+                        logger.info("Daily session refresh successful.")
+                        
+                        # If WebSocket is running, restart it with new tokens
+                        if self._websocket:
+                            logger.info("Restarting WebSocket with new session tokens...")
+                            self.stop_websocket()
+                            time.sleep(2)
+                            self.start_websocket()
+                            
+                            # Give WS time to connect, then resubscribe
+                            time.sleep(3)
+                            for mode, tokens in self._subscribed_tokens.items():
+                                if tokens:
+                                    self.subscribe(list(tokens), mode)
+                    else:
+                        logger.error(f"Daily session refresh failed: {data.get('message')}")
+            except Exception as e:
+                logger.error(f"Error in daily refresh loop: {e}")
+            
+            # Check every hour
+            time.sleep(3600)
     
     def get_instruments(self, exchange: str = "NSE") -> List[Dict[str, Any]]:
         """Fetch NSE equity instruments from Angel One instrument master.
