@@ -107,7 +107,7 @@ class NemotronService:
             json_match = re.search(r'\{.*\}', text_without_think, re.DOTALL)
             
             if json_match:
-                parsed = json.loads(json_match.group(0))
+                parsed = json.loads(json_match.group(0), strict=False)
                 return {
                     "summary": parsed.get("summary") or parsed.get("Summary") or "Summary not provided.",
                     "supporting_factors": parsed.get("supporting_factors") or parsed.get("Supporting_Factors") or parsed.get("Supporting Factors") or [],
