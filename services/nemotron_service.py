@@ -29,7 +29,7 @@ class NemotronService:
         elif hf_key:
             return {
                 "api_key": hf_key,
-                "base_url": "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct/v1/chat/completions",
+                "base_url": "https://router.huggingface.co/hf-inference/v1/chat/completions",
                 "model": "meta-llama/Meta-Llama-3-8B-Instruct",
                 "is_hf": True
             }
