@@ -9,6 +9,11 @@ class NemotronService:
     """Service to interact with NVIDIA Nemotron-3-Nano-30B-A3B for ML signal explanations."""
 
     def __init__(self):
+        # We will initialize the client dynamically on every request 
+        # to ensure environment variables are always fresh.
+        pass
+
+    def _init_client(self):
         raw_key = os.getenv("NVIDIA_API_KEY")
         self.nvidia_api_key = raw_key.strip() if raw_key else None
         
@@ -26,23 +31,18 @@ class NemotronService:
                     api_key=self.nvidia_api_key,
                     base_url="https://integrate.api.nvidia.com/v1"
                 )
-                logger.info("Initialized Nemotron AI Analyst via NVIDIA.")
             elif self.hf_api_key:
                 self.model = "meta-llama/Meta-Llama-3-8B-Instruct"
                 self.client = OpenAI(
                     api_key=self.hf_api_key,
                     base_url="https://api-inference.huggingface.co/v1/"
                 )
-                logger.info("Initialized AI Analyst via HuggingFace.")
-            else:
-                logger.warning("No API Key set. AI analyst disabled.")
-        except ImportError:
-            logger.warning("openai package not installed. AI Analyst disabled.")
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {e}")
             self.init_error = str(e)
 
     def analyze_signal(self, symbol: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        self._init_client()
         """
         Analyze an ML signal using Nemotron and return structured reasoning.
         
