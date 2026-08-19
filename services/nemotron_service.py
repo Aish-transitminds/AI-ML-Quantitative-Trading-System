@@ -16,6 +16,7 @@ class NemotronService:
         self.hf_api_key = hf_raw_key.strip() if hf_raw_key else None
         
         self.client = None
+        self.init_error = None
 
         try:
             from openai import OpenAI
@@ -39,6 +40,7 @@ class NemotronService:
             logger.warning("openai package not installed. AI Analyst disabled.")
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {e}")
+            self.init_error = str(e)
 
     def analyze_signal(self, symbol: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -56,7 +58,7 @@ class NemotronService:
             "summary": "AI Analyst temporarily unavailable.",
             "supporting_factors": [],
             "risk_factors": [],
-            "reasoning": "Unable to connect to Nemotron AI. Please verify NVIDIA_API_KEY and network connection."
+            "reasoning": f"DEBUG INFO - NV_KEY: {bool(self.nvidia_api_key)}, HF_KEY: {bool(self.hf_api_key)}, CLIENT: {bool(self.client)}, INIT_ERR: {self.init_error}. If all are False, Render failed to save your key."
         }
 
         if not self.client:
