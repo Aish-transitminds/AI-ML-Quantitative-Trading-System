@@ -131,6 +131,17 @@ class MarketDataManager:
             # 1. Store tick
             self.tick_store.add_tick(tick)
             
+            # Save tick unconditionally to SQLite for diagnostic / market-closed persistence
+            ts_str = tick.timestamp.isoformat() if hasattr(tick.timestamp, 'isoformat') else str(tick.timestamp)
+            self.db.insert_tick(
+                symbol=tick.symbol,
+                price=tick.ltp,
+                bid=tick.bid_price,
+                ask=tick.ask_price,
+                volume=tick.volume,
+                timestamp=ts_str
+            )
+            
             # 2. Update instrument manager with latest LTP
             self.instruments.update_ltp(tick.token, tick.ltp)
             

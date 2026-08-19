@@ -360,6 +360,20 @@ async def analyze_signal_with_ai(payload: AIAnalyzeRequest):
         for b in recent_bars
     ]
 
+    # Calculate data age for stale checks
+    last_update_dt = result.last_update
+    if isinstance(last_update_dt, str):
+        try:
+            last_update_dt = datetime.fromisoformat(last_update_dt)
+        except Exception:
+            from utils.helpers import get_ist_now
+            last_update_dt = get_ist_now()
+    
+    from utils.helpers import get_ist_now
+    now_dt = get_ist_now()
+    age_seconds = max(0.0, (now_dt - last_update_dt).total_seconds())
+    is_stale = age_seconds > 60.0
+
     context = {
         "symbol": result.symbol,
         "ltp": result.ltp,
@@ -368,6 +382,9 @@ async def analyze_signal_with_ai(payload: AIAnalyzeRequest):
         "signal": result.signal,
         "ml_probability": result.ml_probability,
         "decision": result.decision,
+        "last_tick_timestamp": last_update_dt.isoformat() if hasattr(last_update_dt, 'isoformat') else str(last_update_dt),
+        "is_stale": is_stale,
+        "data_age_seconds": round(age_seconds, 1),
         "liquidity": {
             "bid_qty": result.bid_quantity,
             "ask_qty": result.ask_quantity

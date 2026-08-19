@@ -92,11 +92,22 @@ class DatabaseManager:
             symbol TEXT PRIMARY KEY,
             added_at TEXT DEFAULT (datetime('now'))
         );
+
+        CREATE TABLE IF NOT EXISTS ticks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            price REAL NOT NULL,
+            bid REAL,
+            ask REAL,
+            volume INTEGER,
+            timestamp TEXT NOT NULL
+        );
         
         CREATE INDEX IF NOT EXISTS idx_instruments_symbol ON instruments(symbol);
         CREATE INDEX IF NOT EXISTS idx_trades_symbol ON crossover_trades(symbol);
         CREATE INDEX IF NOT EXISTS idx_trades_status ON crossover_trades(status);
         CREATE INDEX IF NOT EXISTS idx_trades_signal ON crossover_trades(signal);
+        CREATE INDEX IF NOT EXISTS idx_ticks_symbol_timestamp ON ticks(symbol, timestamp);
         '''
         
         with self._lock:
@@ -425,3 +436,40 @@ class DatabaseManager:
             except Exception as e:
                 logger.error(f"Error removing {symbol} from watchlist: {e}")
                 raise
+
+    def insert_tick(self, symbol: str, price: float, bid: Optional[float], ask: Optional[float], volume: Optional[int], timestamp: str):
+        """Insert a raw tick into the database."""
+        query = '''
+        INSERT INTO ticks (symbol, price, bid, ask, volume, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?)
+        '''
+        with self._lock:
+            try:
+                with self.get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(query, (symbol, price, bid, ask, volume, timestamp))
+                    conn.commit()
+            except Exception as e:
+                logger.error(f"Error inserting tick for {symbol}: {e}")
+
+    def get_last_tick(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """Get the most recent tick for a symbol."""
+        query = '''
+        SELECT price, bid, ask, volume, timestamp 
+        FROM ticks 
+        WHERE symbol = ? 
+        ORDER BY timestamp DESC 
+        LIMIT 1
+        '''
+        with self._lock:
+            try:
+                with self.get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(query, (symbol,))
+                    row = cursor.fetchone()
+                    if row:
+                        return dict(row)
+                    return None
+            except Exception as e:
+                logger.error(f"Error getting last tick for {symbol}: {e}")
+                return None

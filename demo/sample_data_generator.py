@@ -45,6 +45,21 @@ DEMO_STOCKS = [
     {'symbol': 'BHEL', 'token': '438', 'name': 'Bharat Heavy Electricals', 'base_price': 155.0},
 ]
 
+# If broker is Polygon/Massive, use US Stocks instead
+if settings.BROKER.lower().strip() in ('polygon', 'massive'):
+    DEMO_STOCKS = [
+        {'symbol': 'AAPL', 'token': '101', 'name': 'Apple Inc.', 'base_price': 180.0},
+        {'symbol': 'MSFT', 'token': '102', 'name': 'Microsoft Corporation', 'base_price': 400.0},
+        {'symbol': 'TSLA', 'token': '103', 'name': 'Tesla, Inc.', 'base_price': 200.0},
+        {'symbol': 'AMZN', 'token': '104', 'name': 'Amazon.com, Inc.', 'base_price': 175.0},
+        {'symbol': 'GOOGL', 'token': '105', 'name': 'Alphabet Inc.', 'base_price': 150.0},
+        {'symbol': 'NVDA', 'token': '106', 'name': 'NVIDIA Corporation', 'base_price': 800.0},
+        {'symbol': 'AMD', 'token': '107', 'name': 'Advanced Micro Devices', 'base_price': 160.0},
+        {'symbol': 'META', 'token': '108', 'name': 'Meta Platforms', 'base_price': 450.0},
+        {'symbol': 'NFLX', 'token': '109', 'name': 'Netflix, Inc.', 'base_price': 600.0},
+        {'symbol': 'QQQ', 'token': '110', 'name': 'Invesco QQQ Trust', 'base_price': 430.0},
+    ]
+
 
 def generate_price_series(
     base_price: float,
@@ -59,44 +74,29 @@ def generate_price_series(
     to generate prices that stay in a realistic range.
     """
     if seed is not None:
-        rng = np.random.RandomState(seed)
-    else:
-        rng = np.random.RandomState()
+        np.random.seed(seed)
     
-    bars = []
+    # Generate prices using random walk
+    returns = np.random.normal(trend, volatility, num_bars)
     price = base_price
+    bars = []
     
-    for i in range(num_bars):
-        # Random returns with slight mean reversion
-        mean_rev = -0.001 * (price - base_price) / base_price
-        ret = rng.normal(trend + mean_rev, volatility)
-        
-        # Generate OHLC
+    for r in returns:
         open_price = price
-        intra_vol = abs(rng.normal(0, volatility * 2))
-        
-        high = open_price * (1 + intra_vol)
-        low = open_price * (1 - intra_vol)
-        close = open_price * (1 + ret)
-        
-        # Ensure OHLC consistency
-        high = max(high, open_price, close)
-        low = min(low, open_price, close)
-        
-        # Volume with some randomness
-        base_vol = rng.randint(5000, 50000)
-        volume = int(base_vol * (1 + abs(ret) * 50))  # Higher volume on big moves
+        close_price = price * (1 + r)
+        high_price = max(open_price, close_price) * (1 + abs(np.random.normal(0, volatility * 0.5)))
+        low_price = min(open_price, close_price) * (1 - abs(np.random.normal(0, volatility * 0.5)))
+        volume = int(np.random.lognormal(12, 1))
         
         bars.append({
             'open': round(open_price, 2),
-            'high': round(high, 2),
-            'low': round(low, 2),
-            'close': round(close, 2),
-            'volume': volume,
+            'high': round(high_price, 2),
+            'low': round(low_price, 2),
+            'close': round(close_price, 2),
+            'volume': volume
         })
+        price = close_price
         
-        price = close
-    
     return bars
 
 
@@ -172,7 +172,8 @@ def _try_fetch_yahoo_bars(symbol: str) -> List[Dict]:
     """
     try:
         import yfinance as yf
-        yahoo_symbol = f"{symbol}.NS"
+        # No .NS suffix for US stocks
+        yahoo_symbol = symbol if settings.BROKER.lower().strip() in ('polygon', 'massive') else f"{symbol}.NS"
         ticker = yf.Ticker(yahoo_symbol)
         # Fetch 6 months of daily data for ML training
         df = ticker.history(period="6mo", interval="1d")
