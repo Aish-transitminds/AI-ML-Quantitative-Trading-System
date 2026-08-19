@@ -30,7 +30,7 @@ class NemotronService:
             return {
                 "api_key": hf_key,
                 "base_url": "https://router.huggingface.co/v1/chat/completions",
-                "model": "meta-llama/Meta-Llama-3-8B-Instruct",
+                "model": "meta-llama/Llama-3.1-8B-Instruct",
                 "is_hf": True
             }
         return None
