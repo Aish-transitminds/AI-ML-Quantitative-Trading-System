@@ -9,7 +9,8 @@ class NemotronService:
     """Service to interact with NVIDIA Nemotron-3-Nano-30B-A3B for ML signal explanations."""
 
     def __init__(self):
-        self.api_key = os.getenv("NVIDIA_API_KEY")
+        raw_key = os.getenv("NVIDIA_API_KEY")
+        self.api_key = raw_key.strip() if raw_key else None
         self.base_url = "https://integrate.api.nvidia.com/v1"
         self.model = "nvidia/nemotron-3-nano-30b-a3b"
         self.client = None
