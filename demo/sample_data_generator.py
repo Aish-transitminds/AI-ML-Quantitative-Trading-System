@@ -31,18 +31,18 @@ from utils.logging_config import get_logger
 
 logger = get_logger("demo.generator")
 
-# Sample NSE stocks for demo (real symbols, simulated prices)
+# Sample NSE stocks for demo (real symbols for Yahoo Finance integration)
 DEMO_STOCKS = [
-    {'symbol': 'DEMO_SBIN-EQ', 'token': 'D3045', 'name': 'State Bank of India (DEMO)', 'base_price': 250.0},
-    {'symbol': 'DEMO_TATAMOTORS-EQ', 'token': 'D3456', 'name': 'Tata Motors (DEMO)', 'base_price': 400.0},
-    {'symbol': 'DEMO_PNB-EQ', 'token': 'D2730', 'name': 'Punjab National Bank (DEMO)', 'base_price': 65.0},
-    {'symbol': 'DEMO_BANKBARODA-EQ', 'token': 'D4668', 'name': 'Bank of Baroda (DEMO)', 'base_price': 120.0},
-    {'symbol': 'DEMO_SAIL-EQ', 'token': 'D2963', 'name': 'Steel Authority of India (DEMO)', 'base_price': 85.0},
-    {'symbol': 'DEMO_COALINDIA-EQ', 'token': 'D20374', 'name': 'Coal India (DEMO)', 'base_price': 235.0},
-    {'symbol': 'DEMO_NHPC-EQ', 'token': 'D14077', 'name': 'NHPC (DEMO)', 'base_price': 48.0},
-    {'symbol': 'DEMO_IRFC-EQ', 'token': 'D26424', 'name': 'IRFC (DEMO)', 'base_price': 75.0},
-    {'symbol': 'DEMO_IOC-EQ', 'token': 'D1624', 'name': 'Indian Oil Corp (DEMO)', 'base_price': 95.0},
-    {'symbol': 'DEMO_BHEL-EQ', 'token': 'D438', 'name': 'Bharat Heavy Electricals (DEMO)', 'base_price': 155.0},
+    {'symbol': 'SBIN', 'token': '3045', 'name': 'State Bank of India', 'base_price': 250.0},
+    {'symbol': 'TATAMOTORS', 'token': '3456', 'name': 'Tata Motors', 'base_price': 400.0},
+    {'symbol': 'PNB', 'token': '2730', 'name': 'Punjab National Bank', 'base_price': 65.0},
+    {'symbol': 'BANKBARODA', 'token': '4668', 'name': 'Bank of Baroda', 'base_price': 120.0},
+    {'symbol': 'SAIL', 'token': '2963', 'name': 'Steel Authority of India', 'base_price': 85.0},
+    {'symbol': 'COALINDIA', 'token': '20374', 'name': 'Coal India', 'base_price': 235.0},
+    {'symbol': 'NHPC', 'token': '14077', 'name': 'NHPC', 'base_price': 48.0},
+    {'symbol': 'IRFC', 'token': '26424', 'name': 'IRFC', 'base_price': 75.0},
+    {'symbol': 'IOC', 'token': '1624', 'name': 'Indian Oil Corp', 'base_price': 95.0},
+    {'symbol': 'BHEL', 'token': '438', 'name': 'Bharat Heavy Electricals', 'base_price': 155.0},
 ]
 
 
@@ -165,6 +165,39 @@ def generate_tick_data(
     
     return ticks
 
+def _try_fetch_yahoo_bars(symbol: str) -> List[Dict]:
+    """Try to fetch real bar data from Yahoo Finance.
+    
+    Returns list of bar dicts or empty list if unavailable.
+    """
+    try:
+        import yfinance as yf
+        yahoo_symbol = f"{symbol}.NS"
+        ticker = yf.Ticker(yahoo_symbol)
+        # Fetch 6 months of daily data for ML training
+        df = ticker.history(period="6mo", interval="1d")
+        
+        if df.empty:
+            return []
+        
+        bars = []
+        for _, row in df.iterrows():
+            bars.append({
+                'open': round(float(row['Open']), 2),
+                'high': round(float(row['High']), 2),
+                'low': round(float(row['Low']), 2),
+                'close': round(float(row['Close']), 2),
+                'volume': int(row['Volume']),
+            })
+        
+        return bars
+    except ImportError:
+        logger.info("yfinance not installed, falling back to synthetic data")
+        return []
+    except Exception as e:
+        logger.warning(f"Yahoo Finance fetch failed for {symbol}: {e}")
+        return []
+
 
 def generate_demo_dataset(
     num_days: int = 5,
@@ -193,15 +226,20 @@ def generate_demo_dataset(
         token = stock['token']
         base_price = stock['base_price']
         
-        # Generate bars (375 per day for NSE: 9:15 to 15:30)
-        num_bars = 375 * num_days
-        seed = hash(symbol) % 2**31
+        # Try to fetch real data from Yahoo Finance first
+        bars = _try_fetch_yahoo_bars(symbol)
         
-        # Add some trend variation
-        trend = random.uniform(-0.0001, 0.0001)
-        bars = generate_price_series(
-            base_price, num_bars, volatility=0.001, trend=trend, seed=seed
-        )
+        if not bars:
+            # Fallback to synthetic data
+            logger.info(f"Yahoo Finance unavailable for {symbol}, using synthetic data")
+            num_bars = 375 * num_days
+            seed = hash(symbol) % 2**31
+            trend = random.uniform(-0.0001, 0.0001)
+            bars = generate_price_series(
+                base_price, num_bars, volatility=0.001, trend=trend, seed=seed
+            )
+        else:
+            logger.info(f"Using real Yahoo Finance data for {symbol}: {len(bars)} bars")
         
         all_bars[symbol] = bars
         

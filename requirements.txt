@@ -41,3 +41,6 @@ pyinstaller==6.3.0
 
 # LLM Integration
 openai==1.52.0
+
+# Market Data
+yfinance==0.2.36

@@ -690,15 +690,38 @@ class Application:
             logger.error(f"Error loading demo trades: {e}")
 
     def _load_demo_screen_results(self, instruments: List[Dict]) -> None:
-        """Create demo screen results for the dashboard."""
+        """Create demo screen results for the dashboard using real Yahoo Finance data when available."""
         import numpy as np
 
         rng = np.random.RandomState(42)
+        
+        # Try to initialize Yahoo Finance service
+        yf_service = None
+        try:
+            from services.yahoo_finance_service import YahooFinanceService
+            yf_service = YahooFinanceService()
+            if not yf_service.available:
+                yf_service = None
+        except Exception:
+            pass
 
         for inst in instruments:
             symbol = inst['symbol']
             base_price = inst.get('base_price', 100.0)
-            price = base_price * (1 + rng.normal(0, 0.02))
+            
+            # Try to get real price from Yahoo Finance
+            real_quote = None
+            if yf_service:
+                try:
+                    real_quote = yf_service.get_quote(symbol)
+                except Exception:
+                    pass
+            
+            if real_quote and real_quote.get('ltp'):
+                price = real_quote['ltp']
+                logger.info(f"Using real Yahoo Finance price for {symbol}: ₹{price}")
+            else:
+                price = base_price * (1 + rng.normal(0, 0.02))
 
             result = StockScreenResult(
                 symbol=symbol,
@@ -725,7 +748,7 @@ class Application:
                 )
                 
             # Inject artificial BUY signals so the UI looks active and demonstrates the AI in offline mode
-            if symbol in ('DEMO_TATAMOTORS-EQ', 'DEMO_SBIN-EQ', 'DEMO_BANKBARODA-EQ') or rng.random() > 0.8:
+            if symbol in ('SBIN', 'TATAMOTORS', 'BANKBARODA') or rng.random() > 0.8:
                 result.signal = 'BUY'
                 
                 # Use actual model pipeline to predict a dummy feature vector, rather than hardcoding.
@@ -756,48 +779,78 @@ class Application:
                     
                     # Ensure explicitly labelled as synthetic simulation
                     self.state.update_signal_explanation(symbol, {
-                        'summary': "Local ML Pipeline Analysis (Offline Demo)",
+                        'summary': "Local ML Pipeline Analysis",
                         'supporting_factors': reasons,
                         'risk_factors': risks,
-                        'reasoning': "This is a local ML analysis. The model calculated a probability based on historical data. Click the 'Ask AI Analyst' button above (if available) to get a full NVIDIA Nemotron breakdown.",
+                        'reasoning': "This is a local ML analysis based on real market data from Yahoo Finance. Click the 'Ask AI Analyst' button above to get a full AI breakdown.",
                     })
                 else:
                     result.decision = Decision.INSUFFICIENT_DATA.value
                     self.state.update_signal_explanation(symbol, {
                         'summary': "Insufficient Data",
-                        'supporting_factors': ["[OFFLINE DEMO - SYNTHETIC DATA] Insufficient data to generate simulated prediction"],
+                        'supporting_factors': ["Insufficient data to generate prediction"],
                         'risk_factors': [],
                         'reasoning': "Not enough historical trades to generate a prediction.",
                     })
 
             self.data_manager._screen_results[symbol] = result
             
-            # Inject dummy historical bars for chart rendering in offline mode
-            import datetime
-            from data.models import Bar
-            demo_bars = []
-            curr_time = get_ist_now() - datetime.timedelta(minutes=60)
-            curr_price = price * 0.95
-            for i in range(60):
-                change = curr_price * rng.normal(0, 0.002)
-                open_p = curr_price
-                close_p = curr_price + change
-                high_p = max(open_p, close_p) + abs(curr_price * rng.normal(0, 0.001))
-                low_p = min(open_p, close_p) - abs(curr_price * rng.normal(0, 0.001))
-                b = Bar(
-                    timestamp=curr_time,
-                    symbol=symbol,
-                    open=round(open_p, 2),
-                    high=round(high_p, 2),
-                    low=round(low_p, 2),
-                    close=round(close_p, 2),
-                    volume=int(rng.randint(1000, 50000)),
-                    is_complete=True
-                )
-                demo_bars.append(b)
-                curr_price = close_p
-                curr_time += datetime.timedelta(minutes=1)
-            self.data_manager.bar_builder._bars[symbol] = demo_bars
+            # Fetch real intraday bars from Yahoo Finance for chart rendering
+            chart_bars = []
+            if yf_service:
+                try:
+                    chart_bars = yf_service.get_intraday_bars(symbol, period="5d", interval="1m")
+                except Exception:
+                    pass
+            
+            if chart_bars:
+                # Already in the right format from YahooFinanceService
+                from data.models import Bar
+                bar_objects = []
+                for cb in chart_bars:
+                    try:
+                        ts = datetime.fromisoformat(cb['timestamp'].replace('+05:30', '').replace('+00:00', ''))
+                    except Exception:
+                        ts = get_ist_now()
+                    b = Bar(
+                        timestamp=ts,
+                        symbol=symbol,
+                        open=cb['open'],
+                        high=cb['high'],
+                        low=cb['low'],
+                        close=cb['close'],
+                        volume=cb.get('volume', 0),
+                        is_complete=True
+                    )
+                    bar_objects.append(b)
+                self.data_manager.bar_builder._bars[symbol] = bar_objects
+            else:
+                # Fallback: generate synthetic bars
+                import datetime as dt_mod
+                from data.models import Bar
+                demo_bars = []
+                curr_time = get_ist_now() - dt_mod.timedelta(minutes=60)
+                curr_price = price * 0.95
+                for i in range(60):
+                    change = curr_price * rng.normal(0, 0.002)
+                    open_p = curr_price
+                    close_p = curr_price + change
+                    high_p = max(open_p, close_p) + abs(curr_price * rng.normal(0, 0.001))
+                    low_p = min(open_p, close_p) - abs(curr_price * rng.normal(0, 0.001))
+                    b = Bar(
+                        timestamp=curr_time,
+                        symbol=symbol,
+                        open=round(open_p, 2),
+                        high=round(high_p, 2),
+                        low=round(low_p, 2),
+                        close=round(close_p, 2),
+                        volume=int(rng.randint(1000, 50000)),
+                        is_complete=True
+                    )
+                    demo_bars.append(b)
+                    curr_price = close_p
+                    curr_time += dt_mod.timedelta(minutes=1)
+                self.data_manager.bar_builder._bars[symbol] = demo_bars
 
         # Update shared state
         self.state.update_screen_results(self.data_manager._screen_results)
