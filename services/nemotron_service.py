@@ -1,71 +1,53 @@
 import os
 import json
 import logging
+import requests
 from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
 class NemotronService:
-    """Service to interact with NVIDIA Nemotron-3-Nano-30B-A3B for ML signal explanations."""
+    """Service to interact with AI Models (NVIDIA/HuggingFace) for ML signal explanations."""
 
     def __init__(self):
-        # We will initialize the client dynamically on every request 
-        # to ensure environment variables are always fresh.
         pass
 
-    def _init_client(self):
-        raw_key = os.getenv("NVIDIA_API_KEY")
-        self.nvidia_api_key = raw_key.strip() if raw_key else None
+    def _get_config(self):
+        raw_nv = os.getenv("NVIDIA_API_KEY")
+        nv_key = raw_nv.strip() if raw_nv else None
         
-        hf_raw_key = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN")
-        self.hf_api_key = hf_raw_key.strip() if hf_raw_key else None
+        raw_hf = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN")
+        hf_key = raw_hf.strip() if raw_hf else None
         
-        self.client = None
-        self.init_error = None
-
-        try:
-            from openai import OpenAI
-            if self.nvidia_api_key:
-                self.model = "nvidia/nemotron-3-nano-30b-a3b"
-                self.client = OpenAI(
-                    api_key=self.nvidia_api_key,
-                    base_url="https://integrate.api.nvidia.com/v1"
-                )
-            elif self.hf_api_key:
-                self.model = "meta-llama/Meta-Llama-3-8B-Instruct"
-                self.client = OpenAI(
-                    api_key=self.hf_api_key,
-                    base_url="https://api-inference.huggingface.co/v1/"
-                )
-        except Exception as e:
-            logger.error(f"Failed to initialize OpenAI client: {e}")
-            self.init_error = str(e)
+        if nv_key:
+            return {
+                "api_key": nv_key,
+                "base_url": "https://integrate.api.nvidia.com/v1/chat/completions",
+                "model": "nvidia/nemotron-3-nano-30b-a3b",
+                "is_hf": False
+            }
+        elif hf_key:
+            return {
+                "api_key": hf_key,
+                "base_url": "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct/v1/chat/completions",
+                "model": "meta-llama/Meta-Llama-3-8B-Instruct",
+                "is_hf": True
+            }
+        return None
 
     def analyze_signal(self, symbol: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        self._init_client()
-        """
-        Analyze an ML signal using Nemotron and return structured reasoning.
+        config = self._get_config()
         
-        Args:
-            symbol: The stock symbol
-            context: Dictionary containing authoritative ML backend state 
-                     (e.g., ltp, smma, ml_probability, decision, features)
-        
-        Returns:
-            Dict containing summary, supporting_factors, risk_factors, and reasoning.
-        """
         fallback_response = {
             "summary": "AI Analyst temporarily unavailable.",
             "supporting_factors": [],
             "risk_factors": [],
-            "reasoning": f"DEBUG INFO - NV_KEY: {bool(self.nvidia_api_key)}, HF_KEY: {bool(self.hf_api_key)}, CLIENT: {bool(self.client)}, INIT_ERR: {self.init_error}. If all are False, Render failed to save your key."
+            "reasoning": f"DEBUG INFO - CONFIG FOUND: {bool(config)}. The server could not connect to the AI model."
         }
 
-        if not self.client:
+        if not config:
             return fallback_response
 
-        # Strictly enforce constraint: Nemotron MUST NOT calculate probabilities or decisions.
-        # It MUST use the provided context to EXPLAIN the decision.
         system_prompt = (
             "You are an expert quantitative market analyst. "
             "Your job is ONLY to explain the reasoning behind a pre-calculated Machine Learning trading signal. "
@@ -82,33 +64,35 @@ class NemotronService:
 
         user_prompt = f"Analyze this ML Signal for {symbol}:\n{json.dumps(context, indent=2)}"
 
+        headers = {
+            "Authorization": f"Bearer {config['api_key']}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": config['model'],
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 1,
+            "top_p": 1,
+            "max_tokens": 8192
+        }
+
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=1,
-                top_p=1,
-                max_tokens=16384,
-                extra_body={"reasoning_budget": 16384},
-                timeout=60.0
-            )
+            response = requests.post(config['base_url'], headers=headers, json=payload, timeout=60.0)
+            response.raise_for_status()
             
-            result_text = response.choices[0].message.content
-            if not result_text:
-                raise ValueError("Empty response from Nemotron")
+            result_data = response.json()
+            result_text = result_data['choices'][0]['message']['content']
             
-            # Remove any <think>...</think> tags which might contain curly braces
             import re
             text_without_think = re.sub(r'<think>.*?</think>', '', result_text, flags=re.DOTALL)
-            
-            # Extract JSON from potential reasoning output
             json_match = re.search(r'\{.*\}', text_without_think, re.DOTALL)
+            
             if json_match:
                 parsed = json.loads(json_match.group(0))
-                # Ensure it has the expected lowercase keys for the frontend
                 return {
                     "summary": parsed.get("summary") or parsed.get("Summary") or "Summary not provided.",
                     "supporting_factors": parsed.get("supporting_factors") or parsed.get("Supporting_Factors") or parsed.get("Supporting Factors") or [],
@@ -119,10 +103,10 @@ class NemotronService:
                 raise ValueError("No JSON block found in response")
 
         except json.JSONDecodeError as e:
-            logger.error(f"Nemotron returned invalid JSON: {e}\nResponse: {result_text}")
+            logger.error(f"AI returned invalid JSON: {e}")
             fallback_response["reasoning"] = "Received invalid response format from AI Analyst."
             return fallback_response
         except Exception as e:
-            logger.error(f"Nemotron AI analysis failed: {e}")
-            fallback_response["reasoning"] = f"Nemotron AI analysis failed: {str(e)}"
+            logger.error(f"AI analysis failed: {e}")
+            fallback_response["reasoning"] = f"AI request failed: {str(e)}"
             return fallback_response
