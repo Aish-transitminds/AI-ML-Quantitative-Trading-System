@@ -195,6 +195,16 @@ export default function StockDetail() {
                 
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>Reasoning</div>
                 <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.5 }}>{data.explanation.reasoning}</p>
+                
+                <div style={{ marginTop: '16px', textAlign: 'center' }}>
+                  <button 
+                    onClick={handleAnalyze}
+                    disabled={analyzing}
+                    style={{ padding: '8px 16px', background: 'transparent', color: '#0066FF', border: '1px solid #0066FF', borderRadius: '8px', cursor: analyzing ? 'wait' : 'pointer', fontWeight: 600, fontSize: '13px', opacity: analyzing ? 0.7 : 1 }}
+                  >
+                    {analyzing ? 'Analyzing with Nemotron AI...' : 'Refresh AI Analysis'}
+                  </button>
+                </div>
               </div>
             ) : (
               <div style={{ marginBottom: '24px', textAlign: 'center' }}>

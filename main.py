@@ -755,21 +755,19 @@ class Application:
                     )
                     
                     # Ensure explicitly labelled as synthetic simulation
-                    reasons.insert(0, "[OFFLINE DEMO - SYNTHETIC DATA] Simulated prediction using live model pipeline")
-                    
                     self.state.update_signal_explanation(symbol, {
-                        'reasons': reasons,
+                        'summary': "Local ML Pipeline Analysis (Offline Demo)",
+                        'supporting_factors': reasons,
                         'risk_factors': risks,
-                        'probability': result.ml_probability,
-                        'decision': result.decision,
+                        'reasoning': "This is a local ML analysis. The model calculated a probability based on historical data. Click the 'Ask AI Analyst' button above (if available) to get a full NVIDIA Nemotron breakdown.",
                     })
                 else:
                     result.decision = Decision.INSUFFICIENT_DATA.value
                     self.state.update_signal_explanation(symbol, {
-                        'reasons': ["[OFFLINE DEMO - SYNTHETIC DATA] Insufficient data to generate simulated prediction"],
+                        'summary': "Insufficient Data",
+                        'supporting_factors': ["[OFFLINE DEMO - SYNTHETIC DATA] Insufficient data to generate simulated prediction"],
                         'risk_factors': [],
-                        'probability': None,
-                        'decision': result.decision,
+                        'reasoning': "Not enough historical trades to generate a prediction.",
                     })
 
             self.data_manager._screen_results[symbol] = result
