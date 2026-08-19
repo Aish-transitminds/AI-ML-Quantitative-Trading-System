@@ -111,4 +111,5 @@ class NemotronService:
             return fallback_response
         except Exception as e:
             logger.error(f"Nemotron AI analysis failed: {e}")
+            fallback_response["reasoning"] = f"Nemotron AI analysis failed: {str(e)}"
             return fallback_response
