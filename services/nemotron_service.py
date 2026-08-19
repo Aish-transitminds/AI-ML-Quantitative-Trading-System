@@ -118,6 +118,15 @@ class NemotronService:
             else:
                 raise ValueError("No JSON block found in response")
 
+        except requests.exceptions.HTTPError as e:
+            error_body = ""
+            try:
+                error_body = e.response.text
+            except Exception:
+                pass
+            logger.error(f"AI request failed with HTTPError: {e}, Response: {error_body}")
+            fallback_response["reasoning"] = f"AI request failed: {str(e)}. Response: {error_body}"
+            return fallback_response
         except json.JSONDecodeError as e:
             logger.error(f"AI returned invalid JSON: {e}")
             fallback_response["reasoning"] = "Received invalid response format from AI Analyst."
