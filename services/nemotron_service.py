@@ -116,7 +116,8 @@ class NemotronService:
                     "reasoning": parsed.get("reasoning") or parsed.get("Reasoning") or "Reasoning not provided."
                 }
             else:
-                raise ValueError("No JSON block found in response")
+                logger.error(f"Failed to find JSON block in model response: {result_text}")
+                raise ValueError(f"No JSON block found in response. Raw response: {result_text[:200]}")
 
         except requests.exceptions.HTTPError as e:
             error_body = ""
