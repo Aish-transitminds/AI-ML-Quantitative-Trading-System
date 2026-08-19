@@ -10,24 +10,35 @@ class NemotronService:
 
     def __init__(self):
         raw_key = os.getenv("NVIDIA_API_KEY")
-        self.api_key = raw_key.strip() if raw_key else None
-        self.base_url = "https://integrate.api.nvidia.com/v1"
-        self.model = "nvidia/nemotron-3-nano-30b-a3b"
+        self.nvidia_api_key = raw_key.strip() if raw_key else None
+        
+        hf_raw_key = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN")
+        self.hf_api_key = hf_raw_key.strip() if hf_raw_key else None
+        
         self.client = None
 
-        if self.api_key:
-            try:
-                from openai import OpenAI
+        try:
+            from openai import OpenAI
+            if self.nvidia_api_key:
+                self.model = "nvidia/nemotron-3-nano-30b-a3b"
                 self.client = OpenAI(
-                    api_key=self.api_key,
-                    base_url=self.base_url
+                    api_key=self.nvidia_api_key,
+                    base_url="https://integrate.api.nvidia.com/v1"
                 )
-            except ImportError:
-                logger.warning("openai package not installed. Nemotron AI disabled.")
-            except Exception as e:
-                logger.error(f"Failed to initialize OpenAI client for Nemotron: {e}")
-        else:
-            logger.warning("NVIDIA_API_KEY not set. Nemotron AI analyst disabled.")
+                logger.info("Initialized Nemotron AI Analyst via NVIDIA.")
+            elif self.hf_api_key:
+                self.model = "meta-llama/Meta-Llama-3-8B-Instruct"
+                self.client = OpenAI(
+                    api_key=self.hf_api_key,
+                    base_url="https://api-inference.huggingface.co/v1/"
+                )
+                logger.info("Initialized AI Analyst via HuggingFace.")
+            else:
+                logger.warning("No API Key set. AI analyst disabled.")
+        except ImportError:
+            logger.warning("openai package not installed. AI Analyst disabled.")
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenAI client: {e}")
 
     def analyze_signal(self, symbol: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """
